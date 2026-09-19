@@ -207,14 +207,11 @@ task printClasspath {
 
 // Enable ZGC: -XX:+UseZGC
 
-// run test when building will slow down the build process
-// manually run when needed
-//test {
-//    useJUnitPlatform()
-//    testLogging {
-//        events "passed", "skipped", "failed"
-//    }
-//}
+// Tests are run explicitly with `gradlew test`; enable the JUnit 5 engine so
+// the existing @Test methods are actually discovered.
+test {
+    useJUnitPlatform()
+}
 
 publishMods {
     file = remapJar.archiveFile
