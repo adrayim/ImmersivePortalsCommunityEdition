@@ -876,11 +876,11 @@ public class McHelper {
     }
     
     public static int getMinSectionY(LevelAccessor world) {
-        return world.getMinSection();
+        return world.getMinSectionY();
     }
     
     public static int getMaxSectionYExclusive(LevelAccessor world) {
-        return world.getMaxSection();
+        return world.getMaxSectionY() + 1;
     }
     
     public static int getYSectionNumber(LevelAccessor world) {

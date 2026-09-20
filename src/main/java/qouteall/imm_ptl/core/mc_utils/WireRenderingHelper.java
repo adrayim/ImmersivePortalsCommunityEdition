@@ -61,7 +61,7 @@ public class WireRenderingHelper {
         float green = ((color >> 8) & 0xff) / 255f;
         float blue = (color & 0xff) / 255f;
         
-        LevelRenderer.renderLineBox(
+        net.minecraft.client.renderer.ShapeRenderer.renderLineBox(
             matrixStack,
             vertexConsumer,
             -boxSize / 2,

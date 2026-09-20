@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(CoreShaders.class)
-public class CoreShadersAccessor {
+public interface CoreShadersAccessor {
     @Invoker("register")
     public static ShaderProgram register(String string, VertexFormat vertexFormat, ShaderDefines shaderDefines) {
         throw new NotImplementedException();

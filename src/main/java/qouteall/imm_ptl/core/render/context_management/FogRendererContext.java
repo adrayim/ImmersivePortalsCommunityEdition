@@ -31,10 +31,19 @@ public class FogRendererContext {
     public static Supplier<Vec3> getCurrentFogColor;
     
     public static StaticFieldsSwappingManager<FogRendererContext> swappingManager;
+
+    static {
+        init();
+    }
     
     public static void init() {
-        //load the class and apply mixin
-        FogRenderer.class.hashCode();
+        // FogParameters carries the color in 1.21.2; there are no static FogRenderer fields to swap.
+        copyContextFromObject = context -> {};
+        copyContextToObject = context -> {};
+        getCurrentFogColor = () -> {
+            var fog = com.mojang.blaze3d.systems.RenderSystem.getShaderFog();
+            return new Vec3(fog.red(), fog.green(), fog.blue());
+        };
         
         swappingManager = new StaticFieldsSwappingManager<>(
             copyContextFromObject, copyContextToObject, false,
@@ -88,7 +97,7 @@ public class FogRendererContext {
         ((IECamera) newCamera).portal_setFocusedEntity(client.cameraEntity);
         
         try {
-            FogRenderer.setupColor(
+            org.joml.Vector4f fogColor = FogRenderer.computeFogColor(
                 newCamera,
                 RenderStates.getPartialTick(),
                 destWorld,
@@ -96,7 +105,7 @@ public class FogRendererContext {
                 client.gameRenderer.getDarkenWorldAmount(RenderStates.getPartialTick())
             );
             
-            Vec3 result = getCurrentFogColor.get();
+            Vec3 result = new Vec3(fogColor.x, fogColor.y, fogColor.z);
             
             return result;
         }

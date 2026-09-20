@@ -87,7 +87,6 @@ dependencies {
     include "me.shedaniel.cloth:cloth-config-fabric:${cloth_config_version}"
 
     modCompileOnly "maven.modrinth:modmenu:${modmenu_version}"
-    modLocalRuntime "maven.modrinth:modmenu:${modmenu_version}"
 
     modCompileOnly "${project.sodium_path}"
 
@@ -98,10 +97,10 @@ dependencies {
         transitive(false)
     }
 
-    modApi("com.github.iPortalTeam:DimLib:${dimlib_version}") {
-        exclude(group: "net.fabricmc.fabric-api")
-    }
-    include("com.github.iPortalTeam:DimLib:${dimlib_version}")
+    modApi files("vendor/dimlib-1.1.0+mc1.21.2.jar")
+    include files("vendor/dimlib-1.1.0+mc1.21.2.jar")
+    modLocalRuntime "maven.modrinth:midnightlib:1.6.4-fabric"
+    include "maven.modrinth:midnightlib:1.6.4-fabric"
 
     // put these into inner mod to reduce duplicate MC jar
 

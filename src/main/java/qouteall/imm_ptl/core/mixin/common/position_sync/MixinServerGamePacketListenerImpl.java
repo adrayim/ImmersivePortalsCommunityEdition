@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -178,10 +179,7 @@ public abstract class MixinServerGamePacketListenerImpl implements IEServerPlayN
      */
     @Overwrite
     @IPVanillaCopy
-    public void teleport(
-        double x, double y, double z, float yaw, float pitch,
-        Set<Relative> relativeAttrs
-    ) {
+    public void teleport(PositionMoveRotation change, Set<Relative> relativeAttrs) {
         // it may request teleport while this.player is marked removed during respawn
         
         if (player.getRemovalReason() != null) {
@@ -194,32 +192,24 @@ public abstract class MixinServerGamePacketListenerImpl implements IEServerPlayN
         
         if (IPConfig.getConfig().serverTeleportLogging) {
             LOGGER.info(
-                "Teleporting player {} to {} {} {} {}",
-                player, player.level().dimension().location(), x, y, z
+                "Teleporting player {} to {} {}",
+                player, player.level().dimension().location(), change.position()
             );
         }
-        
-        double xBase = relativeAttrs.contains(Relative.X) ? this.player.getX() : 0.0;
-        double yBase = relativeAttrs.contains(Relative.Y) ? this.player.getY() : 0.0;
-        double zBase = relativeAttrs.contains(Relative.Z) ? this.player.getZ() : 0.0;
-        float yRotBase = relativeAttrs.contains(Relative.Y_ROT) ? this.player.getYRot() : 0.0f;
-        float xRotBase = relativeAttrs.contains(Relative.X_ROT) ? this.player.getXRot() : 0.0f;
-        
-        this.awaitingPositionFromClient = new Vec3(x, y, z);
-        this.ip_dimOfAwaitingPosition = player.level().dimension();
+
         if (++this.awaitingTeleport == Integer.MAX_VALUE) {
             this.awaitingTeleport = 0;
         }
         
         this.awaitingTeleportTime = this.tickCount;
-        this.player.absMoveTo(x, y, z, yaw, pitch);
-        ClientboundPlayerPositionPacket lookPacket = new ClientboundPlayerPositionPacket(
-            x - xBase, y - yBase, z - zBase,
-            yaw - yRotBase, pitch - xRotBase,
-            relativeAttrs, this.awaitingTeleport
+        this.player.teleportSetPosition(change, relativeAttrs);
+        this.awaitingPositionFromClient = this.player.position();
+        this.ip_dimOfAwaitingPosition = player.level().dimension();
+        ClientboundPlayerPositionPacket lookPacket = ClientboundPlayerPositionPacket.of(
+            this.awaitingTeleport, change, relativeAttrs
         );
         
-        ((IEPlayerPositionLookS2CPacket) lookPacket).ip_setPlayerDimension(player.level().dimension());
+        ((IEPlayerPositionLookS2CPacket) (Object) lookPacket).ip_setPlayerDimension(player.level().dimension());
         
         this.player.connection.send(lookPacket);
     }

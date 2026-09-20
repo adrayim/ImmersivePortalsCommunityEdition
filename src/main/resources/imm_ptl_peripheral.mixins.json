@@ -19,7 +19,6 @@
     "client.MixinBossHealthOverlay_CVB",
     "client.MixinSplashManager_CVB",
     "client.alternate_dimension.MixinClientLevelData_CVB",
-    "client.alternate_dimension.MixinFogRenderer_A_CVB",
     "client.dim_stack.MixinCreateWorldScreen_CVB",
     "client.dim_stack.MixinCreateWorldScreenMoreTab_CVB",
     "client.portal_wand.MixinDebugRenderer",

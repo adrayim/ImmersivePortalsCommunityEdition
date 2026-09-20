@@ -279,6 +279,7 @@ public class MyRenderHelper {
         RenderSystem.getModelViewStack().set(identityMatrix);
 
         RenderSystem.setProjectionMatrix(identityMatrix, ProjectionType.ORTHOGRAPHIC);
+        RenderSystem.setShader(shader);
 
         Tesselator tessellator = RenderSystem.renderThreadTesselator();
         BufferBuilder bufferBuilder = tessellator.

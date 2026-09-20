@@ -130,7 +130,7 @@ public class OverlayRendering {
         matrixStack.translate(offset.x, offset.y, offset.z);
         
         BakedModel model = blockRenderManager.getBlockModel(blockState);
-        RenderType renderLayer = Sheets.translucentCullBlockSheet();
+        RenderType renderLayer = Sheets.translucentItemSheet();
         VertexConsumer buffer = vertexConsumerProvider.getBuffer(renderLayer);
         
         List<BakedQuad> quads = getQuads(model, blockState, portal.getNormal());

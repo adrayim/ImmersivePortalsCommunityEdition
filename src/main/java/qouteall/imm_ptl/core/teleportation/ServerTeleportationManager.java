@@ -118,7 +118,7 @@ public class ServerTeleportationManager {
         if (entity.isRemoved()) {
             return;
         }
-        if (!entity.canChangeDimensions(entity.level(), portal.getDestinationWorld())) {
+        if (!entity.canTeleport(entity.level(), portal.getDestinationWorld())) {
             return;
         }
         if (isJustTeleported(entity, 1)) {

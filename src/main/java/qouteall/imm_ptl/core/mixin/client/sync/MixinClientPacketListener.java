@@ -58,9 +58,6 @@ public abstract class MixinClientPacketListener implements IEClientPlayNetworkHa
     public abstract void handleSetEntityPassengersPacket(ClientboundSetPassengersPacket entityPassengersSetS2CPacket_1);
     
     @Shadow
-    protected abstract void applyLightData(int x, int z, ClientboundLightUpdatePacketData data);
-    
-    @Shadow
     @Final
     private static Logger LOGGER;
     
@@ -106,6 +103,10 @@ public abstract class MixinClientPacketListener implements IEClientPlayNetworkHa
         LocalPlayer player = Minecraft.getInstance().player;
         assert player != null;
         Level playerWorld = player.level();
+
+        if (packetDim == null) {
+            packetDim = playerWorld.dimension();
+        }
         
         if (packetDim != playerWorld.dimension()) {
             LOGGER.info(
@@ -186,7 +187,7 @@ public abstract class MixinClientPacketListener implements IEClientPlayNetworkHa
             ClientLevel currentWorld = Minecraft.getInstance().level;
             for (ClientLevel clientWorld : ClientWorldLoader.getClientWorlds()) {
                 if (clientWorld != currentWorld) {
-                    clientWorld.setGameTime(packet.getGameTime());
+                    clientWorld.setTimeFromServer(packet.gameTime(), packet.dayTime(), packet.tickDayTime());
                 }
             }
         }

@@ -4,6 +4,8 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -56,6 +58,8 @@ public class PortalPlaceholderBlock extends Block {
     
     public static final PortalPlaceholderBlock instance = new PortalPlaceholderBlock(
         BlockBehaviour.Properties.of()
+            .setId(ResourceKey.create(Registries.BLOCK,
+                McHelper.newResourceLocation("immersive_portals", "nether_portal_block")))
             .noCollission()
             .sound(SoundType.GLASS)
             .strength(1.0f, 0)

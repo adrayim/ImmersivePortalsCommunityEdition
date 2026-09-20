@@ -11,6 +11,9 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -93,7 +96,8 @@ public class CommandStickItem extends Item {
     }
     
     public static final CommandStickItem instance = new CommandStickItem(
-        new Item.Properties()
+        new Item.Properties().setId(ResourceKey.create(Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath("immersive_portals", "command_stick")))
     );
     
     public CommandStickItem(Properties settings) {
@@ -181,14 +185,14 @@ public class CommandStickItem extends Item {
     }
     
     @Override
-    public @NotNull String getDescriptionId(ItemStack stack) {
+    public @NotNull Component getName(ItemStack stack) {
         Data data = stack.get(COMPONENT_TYPE);
         
         if (data == null) {
-            return "";
+            return Component.empty();
         }
         
-        return data.nameTranslationKey;
+        return Component.translatable(data.nameTranslationKey);
     }
     
     public static void sendMessage(Player player, Component message) {

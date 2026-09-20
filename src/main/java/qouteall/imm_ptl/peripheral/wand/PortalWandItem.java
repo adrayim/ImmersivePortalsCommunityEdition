@@ -13,6 +13,9 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -33,7 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PortalWandItem extends Item {
-    public static final PortalWandItem instance = new PortalWandItem(new Properties());
+    public static final PortalWandItem instance = new PortalWandItem(new Properties().setId(
+        ResourceKey.create(Registries.ITEM,
+            ResourceLocation.fromNamespaceAndPath("immersive_portals", "portal_wand"))));
     
     public static void init() {
         Registry.register(

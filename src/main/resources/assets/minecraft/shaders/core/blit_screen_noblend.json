@@ -1,0 +1,10 @@
+{
+  "vertex": "minecraft:core/blit_screen_noblend",
+  "fragment": "minecraft:core/blit_screen_noblend",
+  "samplers": [
+    { "name": "DiffuseSampler" }
+  ],
+  "uniforms": [
+  ]
+}
+

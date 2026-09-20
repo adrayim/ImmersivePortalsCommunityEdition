@@ -116,7 +116,7 @@ public class IPGlobal {
     
     public static boolean allowClientEntityPosInterpolation = true;
     
-    public static boolean alwaysOverrideTerrainSetup = false;
+    public static boolean alwaysOverrideTerrainSetup = true;
     
     public static boolean viewBobbingReduce = true;
     

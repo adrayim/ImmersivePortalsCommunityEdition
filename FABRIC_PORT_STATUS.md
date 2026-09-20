@@ -5,7 +5,7 @@ Son ölçüm: 20 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi 
 | Minecraft | Durum |
 | --- | --- |
 | 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). Oyun içinde hem komutla oluşturulan portal hem yeni yakılan normal Nether portalı denendi; ayrıntılar aşağıda. `runClient` başarılı çıktı. Günlükte `ImmPtlChunkTickets` hataları sürüyor. |
-| 1.21.2 | Ayrı `codex/fabric-1.21.2` çalışma ağacında Minecraft 1.21.2, Fabric API 0.106.1, Sodium 0.6.0 beta 3 ve Iris 1.8.0 beta 6 ile port sürüyor. Özgün deponun 1.21.3 WIP çizim değişiklikleri kısmen aktarıldı. Tüm hatalar açıldığında Java derlemesi önce 252, son değişikliklerden sonra **58 hata** verdi; henüz derlenmiyor ve oyun testi yapılamadı. DimLib hâlâ 1.21.1 hedefli. |
+| 1.21.2 | `codex/fabric-1.21.2` dalında Java derlemesi geçti ve istemci açıldı. Creative Superflat dünyada dikey ve yatay Nether portalı oluştu, Nether görüntülendi, oyuncu iki yönde boyut değiştirdi; ayrıntılar aşağıda. Görüntü boşlukları ve chunk yükleme hataları sürdüğünden port henüz tamamlanmadı. Sodium ve Iris çalışma zamanı testi yapılmadı. |
 | 1.21.3 | Özgün deponun `upstream/1.21.3` WIP dalı ayrı çalışma ağacında derlendi. Derleyici ilk 100 Java hatasında durdu; oyun testi yapılamadı. |
 | 1.21.4–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
@@ -33,6 +33,17 @@ Kaynak davranış: [Immersive Portals Wiki — Portals](https://qouteall.fun/imm
 
 **Açık sorun:** Wiki dünyasının ilk açılışında Overworld ve Nether için `ImmPtlChunkTickets` `Chunk loading failure` kayıtları oluştu. Günlük satırına eksik olan `ChunkResult` bilgisi eklendi; değişiklik sonrası dünya tekrar açıldığında ve aynı ayarlarla yeni bir düz dünya oluşturulduğunda hata yeniden oluşmadı. Bu iki deneme sorunun çözüldüğünü kanıtlamaz. Sunucu, çok oyunculu oyun, etkileşim/çarpışma ve 1.21.2+ oyun testleri ayrıca yapılmalıdır.
 
-## 1.21.2–1.21.3 derleme engelleri
+## 1.21.2 Fabric oyun testi ve açık işler
 
-Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. 1.21.2'de Minecraft 1.21.2 sınıfları incelenerek yön vektörü, profiler, yükseklik sınırı, varlık oluşturma nedeni ve varlık tipi kayıt anahtarı uyarlamaları yapıldı. Artan engellerin önemli kısmı portal çizimi, chunk yönetimi, teleport paketi, dünya oluşturma ve DimLib'dir. Fabric API 0.106.1 içindeki attachment eşitleme sınıfları bulunmadığı için eski elle eşitleme çağrısı çıkarıldı; bu davranış oyun testinde ayrıca doğrulanmalıdır. Derleme tamamlanmadığından hiçbir 1.21.2/1.21.3 portal davranışı için olumlu sonuç ileri sürülmemektedir.
+Test dünyası `Fabric 1.21.2 Portal Superflat T`: Creative Superflat, üstte bir çimen, altında iki toprak ve en altta bedrock; Overworld'de su katmanı yok. `run/options.txt` ana ses seviyesi `0.0`. Minecraft 1.21.2 ve Fabric API 0.106.1 kullanıldı. 1.21.3 kaynak dalından uyarlanan DimLib bu dalda `vendor/dimlib-source` kaynakları ve yerel JAR olarak tutuluyor. Cloth Config 16.0.143 kullanıldı. Sodium ve Iris yalnızca derleme bağımlılığı; çalışma zamanında kapalı.
+
+- `compileJava` ve `test` geçti (3 JUnit testi, 0 hata); istemci ve kayıtlı dünya açıldı. 1.21.2'nin değişen shader, frustum, paket, chunk ve GUI API'leri için uyarlamalar yapıldı. Varsayılan vanilla arazi kurulumunda bloklar görünmediği için mevcut alternatif arazi görünürlük yolu etkinleştirildi.
+- Dikey obsidyen çerçeve oyun içinde `fill` komutlarıyla kuruldu, çakmak taşı ve çelikle arayüzden yakıldı. Nether arazisi çerçeve içinden görüldü; [ekran görüntüsü](docs/test-evidence/fabric-1.21.2/nether-through-vertical-portal.png). Dünya kapatılıp yeniden açıldıktan sonra da portal görüntüsü sürdü.
+- Oyuncu portal düzleminin iki yanına oyun içi `tp` komutuyla taşındığında Overworld → Nether ve Nether → Overworld geçişleri doğrulandı. Nether'daki [ekran görüntüsü](docs/test-evidence/fabric-1.21.2/player-in-nether.png) kaydedildi; F3 boyutu `minecraft:the_nether` gösterdi ve `We Need to Go Deeper` ilerlemesi alındı. Normal tuşla yürüyerek dikey geçiş bu denemede doğrulanmadı.
+- Havada yatay çerçeve oyun komutlarıyla kuruldu ve ateş bloğu yerleştirilerek yakıldı. İki yönlü yatay portal varlıkları oyun içinde listelendi. Oyuncu yerçekimiyle bu portaldan Nether'a düştü; günlükte `Client Changed Dimension` kaydı var. İlk varış noktası lav üstündeydi; sonrasında Nether tarafına obsidyen iniş platformu kondu. Overworld düz dünya olarak kaldı.
+
+**Açık sorunlar:** Dikey portal görünümünde bazı beyaz boşluklar var. `ImmPtlChunkTickets` bazı Overworld chunkları için `Unloaded level chunk` yazıyor. Eski alternatif boyut sis mixini ve bazı çarpışma kodları 1.21.2 API uyarlaması bekliyor. Normal yürüyüş, domuz geçişi, portal etkileşimi, özel sunucu, Sodium/Iris ve uzun süreli yeniden açma testleri tamamlanmadı. Bu dal yayımlanmaya hazır değil. Oyun, kullanıcının kendi testine devam edebilmesi için açık bırakıldı. Forge üzerinde çalışılmadı; uzak Git'e gönderim yapılmadı.
+
+## 1.21.3 ve sonraki sürümler
+
+Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. Ayrı 1.21.3 çalışma ağacında derleme ilk 100 Java hatasında durdu; oyun testi yok. 1.21.4 ve sonrası ile 26.x sürümleri için yukarıdaki tablo geçerlidir.

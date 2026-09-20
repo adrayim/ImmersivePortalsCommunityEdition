@@ -264,7 +264,8 @@ public class BlockManipulationServer {
                 hand,
                 blockHitResult
             );
-            if (actionResult.shouldSwing()) {
+            if (actionResult instanceof InteractionResult.Success success &&
+                success.swingSource() == InteractionResult.SwingSource.SERVER) {
                 player.swing(hand, true);
             }
         }

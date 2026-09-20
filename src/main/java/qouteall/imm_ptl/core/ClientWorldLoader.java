@@ -433,7 +433,7 @@ public class ClientWorldLoader {
             
             Holder<DimensionType> dimensionType = registryManager
                 .lookupOrThrow(Registries.DIMENSION_TYPE)
-                .getHolderOrThrow(dimensionTypeKey);
+                .getOrThrow(dimensionTypeKey);
             
             // currently use a separated level data object
             // day time is not shared between worlds
@@ -449,10 +449,10 @@ public class ClientWorldLoader {
                 dimensionType,
                 chunkLoadDistance,
                 simulationDistance,// seems that client world does not use this
-                net.minecraft.util.profiling.Profiler::get,
                 worldRenderer,
                 CLIENT.level.isDebug(),
-                CLIENT.level.getBiomeManager().biomeZoomSeed
+                CLIENT.level.getBiomeManager().biomeZoomSeed,
+                CLIENT.level.getSeaLevel()
             );
             
             // all worlds share the same map data map
@@ -619,7 +619,7 @@ public class ClientWorldLoader {
                 ResourceLocation id = McHelper.newResourceLocation(entry.getKey());
                 int expectedId = entry.getValue();
                 
-                if (biomes.getId(biomes.get(id)) != expectedId) {
+                if (biomes.getId(biomes.getValue(id)) != expectedId) {
                     LOGGER.error("Biome id mismatch: {} {}", id, expectedId);
                 }
             }

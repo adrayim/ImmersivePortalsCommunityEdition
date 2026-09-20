@@ -137,11 +137,11 @@ public class ImmPtlViewArea extends ViewArea {
      * In {@link net.minecraft.client.renderer.SectionOcclusionGraph#initializeQueueForFullUpdate(Camera, Queue)} it reads the RenderChunks in another thread.
      */
     @Override
-    public void repositionCamera(double playerX, double playerZ) {
+    public void repositionCamera(net.minecraft.core.SectionPos cameraSection) {
         net.minecraft.util.profiling.Profiler.get().push("built_section_storage");
         
-        int cameraBlockX = Mth.floor(playerX);
-        int cameraBlockZ = Mth.floor(playerZ);
+        int cameraBlockX = cameraSection.minBlockX();
+        int cameraBlockZ = cameraSection.minBlockZ();
         
         int cameraChunkX = cameraBlockX >> 4;
         int cameraChunkZ = cameraBlockZ >> 4;
@@ -178,7 +178,7 @@ public class ImmPtlViewArea extends ViewArea {
     }
     
     /**
-     * {@link ViewArea#repositionCamera(double, double)}
+     * {@link ViewArea#repositionCamera(net.minecraft.core.SectionPos)}
      */
     private Preset createPresetByChunkPos(int sectionX, int sectionZ) {
         RenderSection[] sections1 =
@@ -210,7 +210,7 @@ public class ImmPtlViewArea extends ViewArea {
     }
     
     /**
-     * {@link ViewArea#repositionCamera(double, double)}
+     * {@link ViewArea#repositionCamera(net.minecraft.core.SectionPos)}
      */
     private void foreachPresetCoveredChunkPoses(
         int centerChunkX, int centerChunkZ,
@@ -259,7 +259,7 @@ public class ImmPtlViewArea extends ViewArea {
         for (int offsetCY = 0; offsetCY < sectionGridSizeY; offsetCY++) {
             RenderSection builtChunk = factory.new RenderSection(
                 0,
-                sectionX << 4, (offsetCY << 4) + minY, sectionZ << 4
+                net.minecraft.core.SectionPos.asLong(sectionX, (minY >> 4) + offsetCY, sectionZ)
             );
             
             array[offsetCY] = builtChunk;

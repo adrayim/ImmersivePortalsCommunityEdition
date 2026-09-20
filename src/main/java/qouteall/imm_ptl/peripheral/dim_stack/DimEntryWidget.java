@@ -120,6 +120,7 @@ public class DimEntryWidget extends ContainerObjectSelectionList.Entry<DimEntryW
             }
             
             guiGraphics.blit(
+                net.minecraft.client.renderer.RenderType::guiTextured,
                 dimIconPath, 0, 0, 0.0F, 0.0F,
                 iconLen, iconLen,
                 iconLen, iconLen

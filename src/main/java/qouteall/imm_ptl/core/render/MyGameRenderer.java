@@ -148,7 +148,6 @@ public class MyGameRenderer {
             ((IEWorldRenderer) oldWorldRenderer).portal_getChunkInfoList();
         HitResult oldCrosshairTarget = client.hitResult;
         Camera oldCamera = client.gameRenderer.getMainCamera();
-        PostChain oldTransparencyShader = ((IEWorldRenderer) worldRenderer).portal_getTransparencyShader();
         RenderBuffers oldRenderBuffers = ((IEWorldRenderer) worldRenderer).ip_getRenderBuffers();
         RenderBuffers oldClientRenderBuffers = client.renderBuffers();
         SectionBufferBuilderPack oldSectionRenderDispatcherFixedBuffers =
@@ -158,7 +157,7 @@ public class MyGameRenderer {
         
         // the projection matrix contains view bobbing.
         // the view bobbing is related with scale
-        Matrix4f oldProjectionMatrix = RenderSystem.getProjectionMatrix();
+        RenderSystem.backupProjectionMatrix();
         Matrix4fStack oldModelViewStack = IERenderSystem.ip_getModelViewStack();
         
         ObjectArrayList<SectionRenderDispatcher.RenderSection> newChunkInfoList =
@@ -213,10 +212,7 @@ public class MyGameRenderer {
         Object newSodiumContext = SodiumInterface.invoker.createNewContext(renderDistance);
         SodiumInterface.invoker.switchContextWithCurrentWorldRenderer(newSodiumContext);
         
-        ((IEWorldRenderer) worldRenderer).portal_setTransparencyShader(null);
-        
         IERenderSystem.ip_setModelViewStack(new Matrix4fStack(16));
-        RenderSystem.applyModelViewMatrix();
         
         IrisInterface.invoker.setPipeline(worldRenderer, null);
         
@@ -229,7 +225,7 @@ public class MyGameRenderer {
         invokeWrapper.accept(() -> {
             net.minecraft.util.profiling.Profiler.get().push("render_portal_content");
             client.gameRenderer.renderLevel(
-                client.getTimer()
+                client.getDeltaTracker()
             );
             net.minecraft.util.profiling.Profiler.get().pop();
         });
@@ -249,8 +245,6 @@ public class MyGameRenderer {
         client.hitResult = oldCrosshairTarget;
         ieGameRenderer.ip_setCamera(oldCamera);
         
-        ((IEWorldRenderer) worldRenderer).portal_setTransparencyShader(oldTransparencyShader);
-        
         FogRendererContext.swappingManager.popSwapping();
         
         ((IEWorldRenderer) oldWorldRenderer).portal_setChunkInfoList(oldChunkInfoList);
@@ -266,9 +260,8 @@ public class MyGameRenderer {
         
         ((IEWorldRenderer) worldRenderer).portal_setFrustum(oldFrustum);
         
-        client.gameRenderer.resetProjectionMatrix(oldProjectionMatrix);
+        RenderSystem.restoreProjectionMatrix();
         IERenderSystem.ip_setModelViewStack(oldModelViewStack);
-        RenderSystem.applyModelViewMatrix();
         
         IrisInterface.invoker.setPipeline(worldRenderer, irisPipeline);
         
@@ -300,14 +293,19 @@ public class MyGameRenderer {
         boolean isFoggy = client.level.effects().isFoggyAt(Mth.floor(x), Mth.floor(y)) ||
             client.gui.getBossOverlay().shouldCreateWorldFog();
         
-        FogRenderer.setupFog(
-            camera, FogRenderer.FogMode.FOG_TERRAIN, Math.max(g, 32.0F), isFoggy, RenderStates.getPartialTick()
+        org.joml.Vector4f fogColor = FogRenderer.computeFogColor(
+            camera, RenderStates.getPartialTick(), client.level,
+            client.options.getEffectiveRenderDistance(),
+            client.gameRenderer.getDarkenWorldAmount(RenderStates.getPartialTick())
         );
-        FogRenderer.levelFogColor();
+        FogRenderer.setupFog(
+            camera, FogRenderer.FogMode.FOG_TERRAIN, fogColor,
+            Math.max(g, 32.0F), isFoggy, RenderStates.getPartialTick()
+        );
     }
     
     public static void updateFogColor() {
-        FogRenderer.setupColor(
+        FogRenderer.computeFogColor(
             client.gameRenderer.getMainCamera(),
             RenderStates.getPartialTick(),
             client.level,

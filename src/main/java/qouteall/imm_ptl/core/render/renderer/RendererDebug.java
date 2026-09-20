@@ -20,7 +20,6 @@ public class RendererDebug extends PortalRenderer {
         renderPortals(modelView);
     }
     
-    @Override
     public void onAfterTranslucentRendering(Matrix4f modelView) {
     
     }
