@@ -113,7 +113,6 @@
     "client.render.MixinMinecraft_Render",
     "client.render.MixinMultiBufferSourceBufferSource",
     "client.render.MixinRenderSection",
-    "client.render.MixinRenderSystem_Clipping",
     "client.render.MixinRenderSystem_Fog",
     "client.render.MixinScreenEffectRenderer",
     "client.render.MixinSectionRenderDispatcher",

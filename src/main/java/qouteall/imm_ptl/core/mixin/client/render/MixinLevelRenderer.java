@@ -501,7 +501,9 @@ public abstract class MixinLevelRenderer implements IEWorldRenderer {
         if (PortalRendering.isRendering()) {
             if (!SodiumInterface.invoker.isSodiumPresent()) {
                 if (viewArea instanceof ImmPtlViewArea immPtlViewArea) {
-                    cir.setReturnValue(ip_isChunkCompiled(immPtlViewArea, blockPos));
+                    // Remote entity sections may be loaded before their terrain mesh is compiled.
+                    // The entity renderer can still draw entities from those loaded chunks.
+                    cir.setReturnValue(ip_isChunkCompiled(immPtlViewArea, blockPos) || level.hasChunkAt(blockPos));
                 }
             }
         }

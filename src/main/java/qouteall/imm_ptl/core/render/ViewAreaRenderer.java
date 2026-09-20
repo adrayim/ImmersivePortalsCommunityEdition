@@ -87,9 +87,10 @@ public class ViewAreaRenderer {
         shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
         shader.PROJECTION_MATRIX.set(projectionMatrix);
         
-        FrontClipping.updateClippingEquationUniformForCurrentShader(false);
-        
         shader.apply();
+
+        // The program must be bound before glUniform4f updates the clip plane.
+        FrontClipping.updateClippingEquationUniformForCurrentShader(false);
         
         ViewAreaRenderer.buildPortalViewAreaTrianglesBuffer(
             fogColor,
