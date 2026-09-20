@@ -98,8 +98,10 @@ dependencies {
         transitive(false)
     }
 
-    modApi "local.dimlib:dimlib:1.1.0+mc1.21.2"
-    include "local.dimlib:dimlib:1.1.0+mc1.21.2"
+    modApi("com.github.iPortalTeam:DimLib:${dimlib_version}") {
+        exclude(group: "net.fabricmc.fabric-api")
+    }
+    include("com.github.iPortalTeam:DimLib:${dimlib_version}")
     modLocalRuntime "maven.modrinth:midnightlib:1.6.4-fabric"
     include "maven.modrinth:midnightlib:1.6.4-fabric"
 

@@ -6,7 +6,7 @@ Son ölçüm: 20 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi 
 | --- | --- |
 | 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). Oyun içinde hem komutla oluşturulan portal hem yeni yakılan normal Nether portalı denendi; ayrıntılar aşağıda. `runClient` başarılı çıktı. Günlükte `ImmPtlChunkTickets` hataları sürüyor. |
 | 1.21.2 | `codex/fabric-1.21.2` dalında Java derlemesi geçti ve istemci açıldı. Creative Superflat dünyada dikey ve yatay Nether portalı oluştu, Nether görüntülendi, oyuncu iki yönde boyut değiştirdi; ayrıntılar aşağıda. Görüntü boşlukları ve chunk yükleme hataları sürdüğünden port henüz tamamlanmadı. Sodium ve Iris çalışma zamanı testi yapılmadı. |
-| 1.21.3 | Özgün deponun `upstream/1.21.3` WIP dalı ayrı çalışma ağacında derlendi. Derleyici ilk 100 Java hatasında durdu; oyun testi yapılamadı. |
+| 1.21.3 | Eski `upstream/1.21.3` WIP dalı ilk 100 Java hatasında durdu. Doğrulanmış 1.21.2 kodundan açılan `codex/fabric-1.21.3-next` dalında `compileJava`, `test`, `build` geçti; özel sunucu ve düz dünya kopyası istemcide açıldı. Görsel ve etkileşim testleri sürüyor. |
 | 1.21.4–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
 | 26.3 | JDK 26 üzerinde Java 25 hedefiyle Gradle 9.5.1, Loom 1.17, Loader 0.19.5 ve Fabric API 0.161.0 kullanıldı. `help` ve `validateAccessWidener` geçti. `compileJava` en az 1.000 hatayla durdu. Oyun testi yapılamadı. |
@@ -66,4 +66,4 @@ Kullanıcı son oyun denemesinde uzak mob geri savurması ve portalın eski konu
 
 ## 1.21.3 ve sonraki sürümler
 
-Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. Ayrı 1.21.3 çalışma ağacında derleme ilk 100 Java hatasında durdu; oyun testi yok. 1.21.4 ve sonrası ile 26.x sürümleri için yukarıdaki tablo geçerlidir.
+Özgün deponun 1.21.3 WIP dalı derleme önünde ilk 100 Java hatasında durdu. Bunun yerine doğrulanmış 1.21.2 düzeltmelerinin `ee672787` yerel commit'inden ayrı `codex/fabric-1.21.3-next` dalı açıldı. Minecraft 1.21.3, Fabric API 0.110.0, Loader 0.16.9, 1.21.3 DimLib ve Fabric mod bildiriminde 1.21.3 hedefi ayarlandı. `compileJava` ve `build` geçiyor; özel sunucu düz dünya oluşturup temiz biçimde kapandı. 1.21.2 Superflat test dünyasının ayrı bir kopyası 1.21.3 istemcisinde açıldı, ses seviyesi 0.0. Günlükte iki yönde boyut geçişi var. Derleme sırasında bazı mixin hedefleri için uyarı var; oyun içi portal görüntüsü ve etkileşimlerinin kullanıcı doğrulaması bekleniyor. 1.21.4 ve sonrası ile 26.x sürümleri için yukarıdaki tablo geçerlidir.
