@@ -5,8 +5,9 @@ Son ölçüm: 20 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi 
 | Minecraft | Durum |
 | --- | --- |
 | 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). Oyun içinde hem komutla oluşturulan portal hem yeni yakılan normal Nether portalı denendi; ayrıntılar aşağıda. `runClient` başarılı çıktı. Günlükte `ImmPtlChunkTickets` hataları sürüyor. |
-| 1.21.2 | `-Pminecraft_version=1.21.2 -Pfabric_version=0.106.1+1.21.2` ile, diğer 1.21.1 bağımlılıkları korunarak derleme denendi. Derleyici ilk 100 hatada durdu. |
-| 1.21.3–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
+| 1.21.2 | Ayrı `codex/fabric-1.21.2` çalışma ağacında Minecraft 1.21.2, Fabric API 0.106.1, Sodium 0.6.0 beta 3 ve Iris 1.8.0 beta 6 ile derleme denendi. Özgün deponun 1.21.3 WIP Fabric kaynak değişiklikleri de denendi. Her iki derleme ilk 100 Java hatasında durdu; oyun testi yapılamadı. DimLib hâlâ 1.21.1 hedefli. |
+| 1.21.3 | Özgün deponun `upstream/1.21.3` WIP dalı ayrı çalışma ağacında derlendi. Derleyici ilk 100 Java hatasında durdu; oyun testi yapılamadı. |
+| 1.21.4–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
 | 26.3 | JDK 26 üzerinde Java 25 hedefiyle Gradle 9.5.1, Loom 1.17, Loader 0.19.5 ve Fabric API 0.161.0 kullanıldı. `help` ve `validateAccessWidener` geçti. `compileJava` en az 1.000 hatayla durdu. Oyun testi yapılamadı. |
 
@@ -31,3 +32,7 @@ Kaynak davranış: [Immersive Portals Wiki — Portals](https://qouteall.fun/imm
 - Ayrı `Fabric 1.21.1 Flat Portal Test` dünyasında komutla oluşturulan portalın hedefindeki altın blok görüldü; kaydetme/yükleme sonrası portal duruyordu. Oyuncu pistonun fiziksel itmesiyle yaklaşık `(40.5, -60, 9.2)` konumundan `(100.0, -60, 30.31)` hedefine geçti.
 
 **Açık sorun:** Wiki dünyasının ilk açılışında Overworld ve Nether için `ImmPtlChunkTickets` `Chunk loading failure` kayıtları oluştu. Günlük satırına eksik olan `ChunkResult` bilgisi eklendi; değişiklik sonrası dünya tekrar açıldığında ve aynı ayarlarla yeni bir düz dünya oluşturulduğunda hata yeniden oluşmadı. Bu iki deneme sorunun çözüldüğünü kanıtlamaz. Sunucu, çok oyunculu oyun, etkileşim/çarpışma ve 1.21.2+ oyun testleri ayrıca yapılmalıdır.
+
+## 1.21.2–1.21.3 derleme engelleri
+
+Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. 1.21.2 için kopyalanan WIP kaynak değişikliklerinden sonra bile derleme şu alanlarda duruyor: Minecraft chunk sırası ve mesafe yöneticisi sınıfları, varlık hasar/oluşturma API'si, `EntityRenderer` tip parametreleri, Fabric attachment ve blok oluşturma API'leri, portal render/shader sınıfları. 1.21.2'de `LevelHeightAccessor` bölüm aralığı ve `Direction` vektör adı doğrulanarak birkaç kaynak satırı uyarlanmıştır. Derleme tamamlanmadığından hiçbir 1.21.2/1.21.3 portal davranışı için olumlu sonuç ileri sürülmemektedir.
