@@ -44,6 +44,8 @@ Test dünyası `Fabric 1.21.2 Portal Superflat T`: Creative Superflat, üstte bi
 
 **Açık sorunlar:** Dikey portal görünümünde bazı beyaz boşluklar var. `ImmPtlChunkTickets` bazı Overworld chunkları için `Unloaded level chunk` yazıyor. Eski alternatif boyut sis mixini ve bazı çarpışma kodları 1.21.2 API uyarlaması bekliyor. Normal yürüyüş, domuz geçişi, portal etkileşimi, özel sunucu, Sodium/Iris ve uzun süreli yeniden açma testleri tamamlanmadı. Bu dal yayımlanmaya hazır değil. Oyun, kullanıcının kendi testine devam edebilmesi için açık bırakıldı. Forge üzerinde çalışılmadı; uzak Git'e gönderim yapılmadı.
 
+**Portal arkasındaki moblar:** 20 Eylül'de kullanıcı diğer boyuttaki mobların görünmediğini bildirdi. 1.21.2'nin mob vertex shader'ı `minecraft:core/entity` adıyla derleniyor; shader dönüşüm tablosu yalnızca kısa adları eşleştirdiği için portal kesme düzlemi kodu uygulanmıyordu. Kısa ad eşleştirmesi ve `entity` girdisi eklendi; tam kimlik eşleştirmesi Sodium gibi shader'lar için korundu. `gradlew test` tekrar geçti. Çalışan oyun eski sınıfları kullanır: değişikliğin oyun içindeki etkisi yeniden başlatılıp moblara portal içinden bakılarak henüz doğrulanmadı. `gradlew build`, mevcut yerel `vendor/dimlib-1.1.0+mc1.21.2.jar` dosyasını Loom `processIncludeJars` görevi içeri alamadığı için başarısız; derleme ve test görevleri başarılı.
+
 ## 1.21.3 ve sonraki sürümler
 
 Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. Ayrı 1.21.3 çalışma ağacında derleme ilk 100 Java hatasında durdu; oyun testi yok. 1.21.4 ve sonrası ile 26.x sürümleri için yukarıdaki tablo geçerlidir.

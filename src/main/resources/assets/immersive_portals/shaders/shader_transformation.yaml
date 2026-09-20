@@ -20,6 +20,7 @@ configs:
   - comment: For portal area rendering and entity rendering and particle
     type: vs
     affectedShaders:
+      - entity
       - rendertype_entity_solid
       - rendertype_entity_cutout
       - rendertype_entity_cutout_no_cull

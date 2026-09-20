@@ -97,10 +97,17 @@ public class ShaderCodeTransformation {
     
     @Nullable
     private static Config getConfig(CompiledShader.Type type, String shaderId) {
+        String shaderName = normalizeShaderName(shaderId);
         return configs.stream().filter(
             config -> matches(config.type, type) &&
-                config.affectedShaders.contains(shaderId)
+                (config.affectedShaders.contains(shaderId) ||
+                    config.affectedShaders.contains(shaderName))
         ).findFirst().orElse(null);
+    }
+
+    private static String normalizeShaderName(String shaderId) {
+        int lastSeparator = Math.max(shaderId.lastIndexOf('/'), shaderId.lastIndexOf(':'));
+        return shaderId.substring(lastSeparator + 1);
     }
     
     public static boolean shouldAddUniform(String shaderName) {
@@ -109,6 +116,10 @@ public class ShaderCodeTransformation {
             return false;
         }
         
-        return configs.stream().anyMatch(config -> config.affectedShaders.contains(shaderName));
+        String normalizedName = normalizeShaderName(shaderName);
+        return configs.stream().anyMatch(config ->
+            config.affectedShaders.contains(shaderName) ||
+                config.affectedShaders.contains(normalizedName)
+        );
     }
 }
