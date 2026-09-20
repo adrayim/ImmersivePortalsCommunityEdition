@@ -1,5 +1,19 @@
 ---
 configs:
+  - comment: For Minecraft 1.21.2 shared terrain vertex shader
+    type: vs
+    affectedShaders:
+      - terrain
+    transformations:
+      - pattern: |-
+          void ( )*main( )*\(( )*( )*\)( )*(
+          )*\{
+        replacement: |-
+          uniform vec4 iportal_ClippingEquation;
+          void main() {
+              gl_ClipDistance[0] = dot(Position.xyz + ModelOffset, iportal_ClippingEquation.xyz) +
+                  iportal_ClippingEquation.w;
+    debugOutput: false
   - comment: For vanilla terrain rendering
     type: vs
     affectedShaders:

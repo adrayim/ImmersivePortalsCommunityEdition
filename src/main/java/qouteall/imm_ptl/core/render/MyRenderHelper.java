@@ -274,6 +274,8 @@ public class MyRenderHelper {
 
         Matrix4f identityMatrix = new Matrix4f();
         identityMatrix.identity();
+        Matrix4f previousProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        ProjectionType previousProjectionType = RenderSystem.getProjectionType();
 
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().set(identityMatrix);
@@ -296,6 +298,7 @@ public class MyRenderHelper {
         BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
 
         RenderSystem.getModelViewStack().popMatrix();
+        RenderSystem.setProjectionMatrix(previousProjection, previousProjectionType);
 
         Objects.requireNonNull(RenderSystem.getShader()).clear();
         RenderSystem.clearShader();

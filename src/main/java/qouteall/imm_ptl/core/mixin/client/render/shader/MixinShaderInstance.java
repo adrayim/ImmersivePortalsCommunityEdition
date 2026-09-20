@@ -13,9 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import qouteall.imm_ptl.core.ducks.IEShader;
 import qouteall.imm_ptl.core.IPGlobal;
 import qouteall.imm_ptl.core.compat.iris_compatibility.IrisInterface;
-import qouteall.imm_ptl.core.render.CrossPortalEntityRenderer;
 import qouteall.imm_ptl.core.render.FrontClipping;
-import qouteall.imm_ptl.core.render.context_management.RenderStates;
 
 import java.util.List;
 
@@ -27,7 +25,7 @@ public abstract class MixinShaderInstance implements IEShader {
     private int programId;
     
     @Unique
-    private int ip_clippingEquationLoccation;
+    private int ip_clippingEquationLoccation = -1;
     
     @Inject(
         method = "setupUniforms",
@@ -43,12 +41,7 @@ public abstract class MixinShaderInstance implements IEShader {
             return;
         }
 
-        if (!IrisInterface.invoker.isIrisPresent() &&
-            (CrossPortalEntityRenderer.isRenderingEntityNormally ||
-                CrossPortalEntityRenderer.isRenderingEntityProjection)) {
-            FrontClipping.updateClippingEquationUniformForCurrentShader(true);
-        }
-        else if (!IrisInterface.invoker.isIrisPresent() && RenderStates.isRenderingPortalWeather) {
+        if (!IrisInterface.invoker.isIrisPresent() && FrontClipping.isClippingEnabled) {
             FrontClipping.updateClippingEquationUniformForCurrentShader(false);
         }
         else {

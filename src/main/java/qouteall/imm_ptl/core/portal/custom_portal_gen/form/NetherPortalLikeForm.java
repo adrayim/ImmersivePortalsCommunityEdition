@@ -95,6 +95,9 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
                 
                 return getNewPortalPlacement(toWorld, toPos, fromWorld, fromShape, triggeringEntity);
             },
+            () -> NetherPortalGeneration.getRecentlyBrokenDestination(
+                fromWorld, toWorld, fromShape
+            ) != null,
             () -> {
                 // check portal integrity while loading chunk
                 return fromShape.frameAreaWithoutCorner.stream().allMatch(
@@ -148,6 +151,33 @@ public abstract class NetherPortalLikeForm extends PortalGenForm {
         ServerLevel fromWorld, BlockPortalShape fromShape,
         @Nullable Entity triggeringEntity
     ) {
+        BlockPortalShape previousTarget = NetherPortalGeneration.getRecentlyBrokenDestination(
+            fromWorld, toWorld, fromShape
+        );
+        if (previousTarget != null) {
+            long missingFrameBlocks = previousTarget.frameAreaWithCorner.stream()
+                .filter(pos -> toWorld.getBlockState(pos).isAir())
+                .count();
+            boolean frameCanBeRestored = missingFrameBlocks <= 2 &&
+                previousTarget.frameAreaWithCorner.stream().allMatch(pos -> {
+                    BlockState state = toWorld.getBlockState(pos);
+                    return state.isAir() || getOtherSideFramePredicate().test(state);
+                }) &&
+                previousTarget.area.stream().allMatch(pos -> getAreaPredicate().test(toWorld.getBlockState(pos)));
+
+            if (frameCanBeRestored) {
+                // The original destination frame was only partly broken. Reuse it
+                // instead of placing another frame beside or above it.
+                return new PortalGenInfo(
+                    fromWorld.dimension(), toWorld.dimension(), fromShape, previousTarget
+                );
+            }
+
+            // The old portal is still being removed, or its destination was changed
+            // too much to repair safely. Do not build a duplicate beside it.
+            return null;
+        }
+
         boolean canForcePlace = false;
         if (triggeringEntity instanceof ServerPlayer player) {
             if (player.isCreative()) {

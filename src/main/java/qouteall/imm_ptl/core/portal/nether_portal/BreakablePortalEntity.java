@@ -240,6 +240,7 @@ public abstract class BreakablePortalEntity extends Portal {
         
         BreakablePortalEntity reversePortal = getReversePortal();
         if (reversePortal != null) {
+            NetherPortalGeneration.rememberBrokenLink(reversePortal, this);
             reversePortal.shouldBreakPortal = true;
         }
         else {

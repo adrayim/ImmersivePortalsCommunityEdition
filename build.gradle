@@ -17,6 +17,7 @@ base {
 repositories {
     flatDir {
         dirs 'deps'
+        dirs 'vendor'
     }
 }
 
@@ -97,8 +98,8 @@ dependencies {
         transitive(false)
     }
 
-    modApi files("vendor/dimlib-1.1.0+mc1.21.2.jar")
-    include files("vendor/dimlib-1.1.0+mc1.21.2.jar")
+    modApi "local.dimlib:dimlib:1.1.0+mc1.21.2"
+    include "local.dimlib:dimlib:1.1.0+mc1.21.2"
     modLocalRuntime "maven.modrinth:midnightlib:1.6.4-fabric"
     include "maven.modrinth:midnightlib:1.6.4-fabric"
 

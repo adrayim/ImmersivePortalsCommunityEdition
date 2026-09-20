@@ -15,6 +15,7 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import qouteall.imm_ptl.core.McHelper;
+import qouteall.imm_ptl.core.IPGlobal;
 import qouteall.imm_ptl.core.chunk_loading.ChunkLoader;
 import qouteall.imm_ptl.core.chunk_loading.DimensionalChunkPos;
 import qouteall.imm_ptl.core.chunk_loading.ImmPtlChunkTracking;
@@ -28,6 +29,8 @@ import qouteall.q_misc_util.my_util.IntBox;
 import qouteall.q_misc_util.my_util.LimitedLogger;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -37,6 +40,62 @@ import java.util.function.Supplier;
 public class NetherPortalGeneration {
     
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final long RECENT_LINK_LIFETIME_NANOS = 60_000_000_000L;
+    private static final Map<RecentLinkKey, RecentLink> recentBrokenLinks = new HashMap<>();
+
+    static {
+        IPGlobal.SERVER_CLEANUP_EVENT.register(server ->
+            recentBrokenLinks.keySet().removeIf(key -> key.server() == server)
+        );
+    }
+
+    private record RecentLinkKey(MinecraftServer server, ResourceKey<Level> from, ResourceKey<Level> to,
+                                 BlockPos center, Direction.Axis axis) {}
+
+    private record RecentLink(BlockPortalShape destinationShape, long brokenAt) {}
+
+    public static void rememberBrokenLink(BreakablePortalEntity source, BreakablePortalEntity destination) {
+        if (!(source instanceof NetherPortalEntity) || !(destination instanceof NetherPortalEntity) ||
+            source.blockPortalShape == null || destination.blockPortalShape == null) {
+            return;
+        }
+
+        long now = System.nanoTime();
+        recentBrokenLinks.entrySet().removeIf(e -> now - e.getValue().brokenAt() > RECENT_LINK_LIFETIME_NANOS);
+        recentBrokenLinks.put(
+            new RecentLinkKey(source.getServer(), source.level().dimension(), destination.level().dimension(),
+                source.blockPortalShape.innerAreaBox.getCenter(), source.blockPortalShape.axis),
+            new RecentLink(destination.blockPortalShape, now)
+        );
+    }
+
+    @Nullable
+    public static BlockPortalShape getRecentlyBrokenDestination(
+        ServerLevel fromWorld, ServerLevel toWorld, BlockPortalShape fromShape
+    ) {
+        RecentLinkKey key = new RecentLinkKey(
+            fromWorld.getServer(), fromWorld.dimension(), toWorld.dimension(),
+            fromShape.innerAreaBox.getCenter(), fromShape.axis
+        );
+        RecentLink link = recentBrokenLinks.get(key);
+        if (link == null) {
+            return null;
+        }
+        if (System.nanoTime() - link.brokenAt() > RECENT_LINK_LIFETIME_NANOS) {
+            recentBrokenLinks.remove(key);
+            return null;
+        }
+        return link.destinationShape();
+    }
+
+    private static boolean hasPortalAtShape(ServerLevel world, BlockPortalShape shape) {
+        return McHelper.getEntitiesNearby(
+            world, shape.innerAreaBox.getCenterVec(), NetherPortalEntity.class, 4
+        ).stream().anyMatch(portal -> !portal.isRemoved() &&
+            portal.blockPortalShape != null &&
+            portal.blockPortalShape.axis == shape.axis &&
+            portal.blockPortalShape.innerAreaBox.getCenter().equals(shape.innerAreaBox.getCenter()));
+    }
     
     @Nullable
     public static IntBox findAirCubePlacement(
@@ -117,6 +176,7 @@ public class NetherPortalGeneration {
         Consumer<PortalGenInfo> portalEntityGeneratingFunc,
         //return null for not generate new frame
         Supplier<PortalGenInfo> newFramePlacer,
+        BooleanSupplier shouldReuseRecentBrokenLink,
         BooleanSupplier portalIntegrityChecker,
         
         FrameSearching.FrameSearchingFunc<PortalGenInfo> matchShapeByFramePos
@@ -180,6 +240,8 @@ public class NetherPortalGeneration {
             indicatorEntity.remove(Entity.RemovalReason.KILLED);
             ImmPtlChunkTracking.removeGlobalAdditionalChunkLoader(server, chunkLoader);
         };
+
+        int[] cleanupWaitTicks = {0};
         
         ServerTaskList.of(server).addTask(() -> {
             
@@ -197,6 +259,23 @@ public class NetherPortalGeneration {
                     "imm_ptl.loading_chunks", loadedChunks, allChunksNeedsLoading
                 ));
                 return false;
+            }
+
+            if (shouldReuseRecentBrokenLink.getAsBoolean()) {
+                BlockPortalShape previousTarget = getRecentlyBrokenDestination(
+                    fromWorld, toWorld, fromShape
+                );
+                if (hasPortalAtShape(fromWorld, fromShape) ||
+                    (previousTarget != null && hasPortalAtShape(toWorld, previousTarget))) {
+                    if (++cleanupWaitTicks[0] <= 40) {
+                        return false;
+                    }
+                    finalizer.run();
+                    return true;
+                }
+                onGenerateNewFrame.run();
+                finalizer.run();
+                return true;
             }
             
             if (!otherSideChunkAlreadyGenerated) {

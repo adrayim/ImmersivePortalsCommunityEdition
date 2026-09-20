@@ -3,6 +3,7 @@ package qouteall.imm_ptl.core.render.renderer;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -14,7 +15,7 @@ import qouteall.imm_ptl.core.portal.PortalRenderInfo;
 import qouteall.imm_ptl.core.render.FrontClipping;
 import qouteall.imm_ptl.core.render.MyRenderHelper;
 import qouteall.imm_ptl.core.render.ViewAreaRenderer;
-import qouteall.imm_ptl.core.render.context_management.FogRendererContext;
+import qouteall.imm_ptl.core.render.context_management.RenderStates;
 import qouteall.imm_ptl.core.render.context_management.PortalRendering;
 import qouteall.imm_ptl.core.render.context_management.WorldRenderInfo;
 
@@ -37,8 +38,16 @@ public class RendererUsingStencil extends PortalRenderer {
         boolean skipClearing = WorldRenderInfo.isRendering();
         if (skipClearing) {
             if (WorldRenderInfo.getTopRenderInfo().doRenderSky) {
+                float partialTick = RenderStates.getPartialTick();
+                var fogColor = FogRenderer.computeFogColor(
+                    client.gameRenderer.getMainCamera(), partialTick, client.level,
+                    client.options.getEffectiveRenderDistance(),
+                    client.gameRenderer.getDarkenWorldAmount(partialTick)
+                );
                 RenderSystem.depthMask(false);
-                MyRenderHelper.renderScreenTriangle(FogRendererContext.getCurrentFogColor.get());
+                MyRenderHelper.renderScreenTriangle(new Vec3(
+                    fogColor.x, fogColor.y, fogColor.z
+                ));
                 RenderSystem.depthMask(true);
             }
         }

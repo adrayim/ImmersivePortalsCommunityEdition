@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -68,8 +69,9 @@ public class BlockManipulationClient {
         Vec3 cameraPos = client.gameRenderer.getMainCamera().getPosition();
         
         double reachDistance = client.player.blockInteractionRange();
+        double entityReachDistance = client.player.entityInteractionRange();
         
-        PortalUtils.raytracePortalFromEntityView(client.player, partialTick, reachDistance, true, portal1 -> portal1.isInteractableBy(client.player)).ifPresent(pair -> {
+        PortalUtils.raytracePortalFromEntityView(client.player, partialTick, Math.max(reachDistance, entityReachDistance), true, portal1 -> portal1.isInteractableBy(client.player)).ifPresent(pair -> {
             Portal portal = pair.getFirst();
             Vec3 hitPos = pair.getSecond().hitPos();
             double distanceToPortalPointing = hitPos.distanceTo(cameraPos);
@@ -82,6 +84,7 @@ public class BlockManipulationClient {
                     client.player.level().dimension(),
                     distanceToPortalPointing,
                     reachDistance,
+                    entityReachDistance,
                     portal
                 );
             }
@@ -111,6 +114,7 @@ public class BlockManipulationClient {
         ResourceKey<Level> playerDimension,
         double beginDistance,
         double endDistance,
+        double entityReachDistance,
         Portal portal
     ) {
         
@@ -186,6 +190,29 @@ public class BlockManipulationClient {
             if (!world.getBlockState(((BlockHitResult) remoteHitResult).getBlockPos()).isAir()) {
                 client.hitResult = createMissedHitResult(from, to);
                 remotePointedDim = portal.getDestDim();
+            }
+        }
+
+        if (beginDistance < entityReachDistance) {
+            Vec3 remoteDirection = portal.transformLocalVecNonScale(viewVector).normalize();
+            Vec3 entityFrom = portal.transformPoint(
+                cameraPos.add(viewVector.scale(beginDistance))
+            ).add(remoteDirection.scale(0.001));
+            Vec3 entityTo = portal.transformPoint(
+                cameraPos.add(viewVector.scale(entityReachDistance))
+            );
+            EntityHitResult entityHit = CrossPortalEntityInteraction.findTarget(
+                world, client.player, entityFrom, entityTo
+            );
+            if (entityHit != null &&
+                (remoteHitResult.getType() == HitResult.Type.MISS ||
+                    entityFrom.distanceToSqr(entityHit.getLocation()) <
+                        entityFrom.distanceToSqr(remoteHitResult.getLocation()))) {
+                remoteHitResult = entityHit;
+                remotePointedDim = portal.getDestDim();
+                client.hitResult = createMissedHitResult(
+                    cameraPos, cameraPos.add(viewVector.scale(beginDistance))
+                );
             }
         }
         

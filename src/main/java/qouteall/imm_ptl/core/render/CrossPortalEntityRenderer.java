@@ -36,6 +36,9 @@ import qouteall.q_misc_util.Helper;
 import qouteall.q_misc_util.my_util.Plane;
 
 import java.util.WeakHashMap;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 
 @Environment(EnvType.CLIENT)
 public class CrossPortalEntityRenderer {
@@ -150,6 +153,7 @@ public class CrossPortalEntityRenderer {
         }
         
         ResourceKey<Level> clientDim = client.level.dimension();
+        Set<Entity> renderedEntities = Collections.newSetFromMap(new IdentityHashMap<>());
         
         for (Entity entity : collidedEntities.keySet()) {
             PortalCollisionHandler collisionHandler = ((IEEntity) entity).ip_getPortalCollisionHandler();
@@ -160,11 +164,27 @@ public class CrossPortalEntityRenderer {
                     if (!(collidingPortal instanceof Mirror)) {
                         ResourceKey<Level> projectionDimension = collidingPortal.getDestDim();
                         if (clientDim == projectionDimension) {
-                            renderProjectedEntity(entity, collidingPortal, matrixStack);
+                            if (renderProjectedEntity(entity, collidingPortal, matrixStack)) {
+                                renderedEntities.add(entity);
+                            }
                         }
                     }
                 }
             }
+        }
+
+        // Collision tracking uses the entity's eye position and can select the
+        // opposite face of a two-sided portal. Render the part visible through
+        // this portal if no projection was actually drawn for the entity.
+        Portal renderingPortal = PortalRendering.isRendering() ? PortalRendering.getRenderingPortal() : null;
+        if (renderingPortal != null && !(renderingPortal instanceof Mirror) &&
+            renderingPortal.getDestDim() == clientDim) {
+            McHelper.foreachEntitiesByBox(
+                Entity.class, renderingPortal.level(), renderingPortal.getBoundingBox().inflate(0.1),
+                2, entity -> !(entity instanceof Portal) && !entity.isRemoved() &&
+                    !renderedEntities.contains(entity),
+                entity -> renderEntity(entity, renderingPortal, matrixStack)
+            );
         }
     }
     
@@ -176,7 +196,7 @@ public class CrossPortalEntityRenderer {
             outerPlanePos.subtract(entityPos).dot(collidingPortalNormal) > 0.01;
     }
     
-    private static void renderProjectedEntity(
+    private static boolean renderProjectedEntity(
         Entity entity,
         Portal collidingPortal,
         PoseStack matrixStack
@@ -197,7 +217,7 @@ public class CrossPortalEntityRenderer {
                     boolean isHidden = innerClipping != null &&
                         !innerClipping.isPointOnPositiveSide(cameraPos);
                     if (renderingPortal == collidingPortal || !isHidden) {
-                        renderEntity(entity, collidingPortal, matrixStack);
+                        return renderEntity(entity, collidingPortal, matrixStack);
                     }
                 }
             }
@@ -210,12 +230,14 @@ public class CrossPortalEntityRenderer {
             FrontClipping.setupInnerClipping(
                 collidingPortal.getInnerClipping(), matrixStack.last().pose(), 0
             );
-            renderEntity(entity, collidingPortal, matrixStack);
+            boolean rendered = renderEntity(entity, collidingPortal, matrixStack);
             FrontClipping.disableClipping();
+            return rendered;
         }
+        return false;
     }
     
-    private static void renderEntity(
+    private static boolean renderEntity(
         Entity entity,
         Portal transformingPortal,
         PoseStack matrixStack
@@ -241,17 +263,17 @@ public class CrossPortalEntityRenderer {
             boolean intersects = PortalManipulation.isOtherSideBoxInside(transformedBoundingBox, renderingPortal);
             
             if (!intersects) {
-                return;
+                return false;
             }
         }
         
         if (entity instanceof LocalPlayer) {
             if (!IPGlobal.renderYourselfInPortal) {
-                return;
+                return false;
             }
             
             if (!transformingPortal.getDoRenderPlayer()) {
-                return;
+                return false;
             }
             
             if (client.options.getCameraType().isFirstPerson()) {
@@ -262,13 +284,13 @@ public class CrossPortalEntityRenderer {
                     valve *= transformingPortal.getScaling();
                 }
                 if (dis < valve) {
-                    return;
+                    return false;
                 }
                 
                 AABB transformedBoundingBox =
                     Helper.transformBox(RenderStates.originalPlayerBoundingBox, transformingPortal::transformPoint);
                 if (transformedBoundingBox.contains(CHelper.getCurrentCameraPos())) {
-                    return;
+                    return false;
                 }
             }
         }
@@ -304,13 +326,14 @@ public class CrossPortalEntityRenderer {
                 RenderStates.getPartialTick(), matrixStack,
                 consumers
             );
-            //immediately invoke draw call
+            // Immediately invoke the draw call with the current portal stencil state.
             consumers.endBatch();
         }
         finally {
             matrixStack.popPose();
             isRenderingEntityProjection = false;
         }
+        return true;
     }
     
     private static void setupEntityProjectionRenderingTransformation(

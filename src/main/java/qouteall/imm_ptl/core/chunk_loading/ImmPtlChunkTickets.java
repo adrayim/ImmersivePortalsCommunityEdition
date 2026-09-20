@@ -7,10 +7,12 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongPredicate;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkLevel;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ChunkTaskPriorityQueue;
 import net.minecraft.server.level.DistanceManager;
+import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
@@ -182,19 +184,34 @@ public class ImmPtlChunkTickets {
         }
         
         DistanceManager distanceManager = getDistanceManager(world);
-        Executor mainThreadExecutor = ((qouteall.imm_ptl.core.mixin.common.chunk_sync.IEDistanceManager) distanceManager).ip_getMainThreadExecutor();
-        
         // clear the already loaded chunks
         waitingForLoading.removeIf((long chunkPos) -> {
             ChunkHolder chunkHolder = getChunkHolder(world, chunkPos);
             if (chunkHolder == null) {
-                return true;
+                return false;
             }
-            
-            ChunkResult<LevelChunk> resultNow = chunkHolder.getEntityTickingChunkFuture()
-                .getNow(null);
+
+            int radius = getLoadingRadius();
+            int requestedLevel = ChunkLevel.byStatus(FullChunkStatus.FULL) - radius;
+            if (chunkHolder.getTicketLevel() > requestedLevel) {
+                return false;
+            }
+
+            // A radius-one region ticket requests block ticking. Its entity-ticking
+            // future stays at the vanilla "Unloaded level chunk" sentinel.
+            var loadingFuture = radius >= 2
+                ? chunkHolder.getEntityTickingChunkFuture()
+                : radius == 1
+                    ? chunkHolder.getTickingChunkFuture()
+                    : chunkHolder.getFullChunkFuture();
+            ChunkResult<LevelChunk> resultNow = loadingFuture.getNow(null);
             
             if (resultNow == null) {
+                return false;
+            }
+
+            if (!resultNow.isSuccess() &&
+                "Unloaded level chunk".equals(resultNow.getError())) {
                 return false;
             }
             
