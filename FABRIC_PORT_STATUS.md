@@ -1,10 +1,10 @@
 # Fabric sürüm geçişi durumu
 
-Son ölçüm: 20 Eylül 2026. Bu dal 26.3 için **devam eden bir porttur**; çalışır mod veya yayımlanabilir JAR üretmez. Forge kapsam dışıdır.
+Son ölçüm: 20 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi ölçümlerini tutar. 26.3 portu ayrı çalışma ağacında devam etmektedir; henüz çalışır mod veya yayımlanabilir JAR üretmez. Forge kapsam dışıdır.
 
 | Minecraft | Durum |
 | --- | --- |
-| 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). `runClient` ile Creative Superflat dünya açıldı; ana ses `OFF` yapıldı. Dikey portalın hedefindeki altın blok işareti portaldan görüntülendi. Dünya kaydedilip yeniden açıldığında portal ve işaret duruyordu. Oyuncu, pistonun fiziksel itmesiyle portaldan geçerek yaklaşık `(40.5, -60, 9.2)` konumundan `(100.0, -60, 30.31)` hedefine ulaştı. `runClient` başarılı çıktı. Günlükte üç `ImmPtlChunkTickets` `Chunk loading failure` kaydı var; ayrıca araştırılmalı. |
+| 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). Oyun içinde hem komutla oluşturulan portal hem yeni yakılan normal Nether portalı denendi; ayrıntılar aşağıda. `runClient` başarılı çıktı. Günlükte `ImmPtlChunkTickets` hataları sürüyor. |
 | 1.21.2 | `-Pminecraft_version=1.21.2 -Pfabric_version=0.106.1+1.21.2` ile, diğer 1.21.1 bağımlılıkları korunarak derleme denendi. Derleyici ilk 100 hatada durdu. |
 | 1.21.3–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
@@ -18,3 +18,16 @@ Son ölçüm: 20 Eylül 2026. Bu dal 26.3 için **devam eden bir porttur**; çal
 4. Java derlemesi geçtikten sonra `fabric.mod.json` sürüm aralığı ve uyumsuzluk kayıtları güncellenmeli; istemci, özel sunucu ve portaldan geçiş senaryoları oyunda test edilmeli.
 
 26.3 dalında `fabric.mod.json` hâlâ 1.21.1 uyumluluğunu ilan eder. Derleme ve oyun testleri geçmeden bu beyan değiştirilmemelidir.
+
+## 1.21.1 oyun testi
+
+Kaynak davranış: [Immersive Portals Wiki — Portals](https://qouteall.fun/immptl/wiki/Portals.html). Test, Creative **Superflat** dünyada yapıldı; ana ses `OFF` olarak ayarlandı. Önceki `/portal` komutuyla oluşturulan portal testi, normal Nether portalı için yeterli kanıt sayılmıyor.
+
+- `Wiki Nether Portal Test` adlı yeni dünyada standart obsidyen çerçeve çakmak taşı ve çelikle oyun arayüzünden yakıldı. Dikey çerçeve içinde Nether arazisi görüldü; [oyun görüntüsü](docs/test-evidence/fabric-1.21.1/nether-portal.png).
+- Dikey portala hareket verilerek çağrılan etiketli domuzun Nether boyutunda bulunduğu `/execute in minecraft:the_nether if entity ...` ile doğrulandı. Bu test fiziksel varlık geçişini kapsar.
+- Wiki'de desteklendiği belirtilen yatay obsidyen portal da oyun arayüzünden yakıldı. Oyuncu portala düşerek Overworld'den Nether'a geçti; günlükte `Client Changed Dimension`, portal kimliği ve `We Need to Go Deeper` ilerlemesi var. [F3 ekran görüntüsü](docs/test-evidence/fabric-1.21.1/player-in-nether.png).
+- Nether tarafındaki yatay portalın üzerine gidildiğinde günlükte Nether → Overworld geçişi görüldü; yerçekimi oyuncuyu hemen Overworld → Nether yönünde tekrar portala soktu. Bu nedenle son F3 görüntüsü Nether'dadır; günlükte iki ayrı geçiş kayıtlıdır.
+- Dünya kaydedilip yeniden açıldı. Dikey portalın içinden Nether arazisi yeniden görüntülendi; [yeniden açıldıktan sonraki görüntü](docs/test-evidence/fabric-1.21.1/nether-portal-after-reload.png).
+- Ayrı `Fabric 1.21.1 Flat Portal Test` dünyasında komutla oluşturulan portalın hedefindeki altın blok görüldü; kaydetme/yükleme sonrası portal duruyordu. Oyuncu pistonun fiziksel itmesiyle yaklaşık `(40.5, -60, 9.2)` konumundan `(100.0, -60, 30.31)` hedefine geçti.
+
+**Açık sorun:** Wiki dünyasının ilk açılışında Overworld ve Nether için `ImmPtlChunkTickets` `Chunk loading failure` kayıtları oluştu. Günlük satırına eksik olan `ChunkResult` bilgisi eklendi; değişiklik sonrası dünya tekrar açıldığında ve aynı ayarlarla yeni bir düz dünya oluşturulduğunda hata yeniden oluşmadı. Bu iki deneme sorunun çözüldüğünü kanıtlamaz. Sunucu, çok oyunculu oyun, etkileşim/çarpışma ve 1.21.2+ oyun testleri ayrıca yapılmalıdır.

@@ -203,7 +203,7 @@ public class ImmPtlChunkTickets {
             if (!resultNow.isSuccess()) {
                 LOGGER.error(
                     "Chunk loading failure {} {} {}",
-                    world, new ChunkPos(chunkPos)
+                    world, new ChunkPos(chunkPos), resultNow
                 );
             }
             
