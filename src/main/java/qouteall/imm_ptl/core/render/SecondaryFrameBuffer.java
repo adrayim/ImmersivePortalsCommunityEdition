@@ -20,8 +20,7 @@ public class SecondaryFrameBuffer {
         if (fb == null) {
             fb = new TextureTarget(
                 width, height,
-                true,//has depth attachment
-                Minecraft.ON_OSX
+                true // has depth attachment
             );
             fb.checkStatus();
             Helper.log("Secondary Framebuffer init");
@@ -29,9 +28,7 @@ public class SecondaryFrameBuffer {
         if (width != fb.viewWidth ||
             height != fb.viewHeight
         ) {
-            fb.resize(
-                width, height, Minecraft.ON_OSX
-            );
+            fb.resize(width, height);
             fb.checkStatus();
             Helper.log("Secondary Framebuffer resized");
         }

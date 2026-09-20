@@ -5,7 +5,7 @@ Son ölçüm: 20 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi 
 | Minecraft | Durum |
 | --- | --- |
 | 1.21.1 | `compileJava` ve JUnit 5 testleri geçti (3 test, 0 hata). Oyun içinde hem komutla oluşturulan portal hem yeni yakılan normal Nether portalı denendi; ayrıntılar aşağıda. `runClient` başarılı çıktı. Günlükte `ImmPtlChunkTickets` hataları sürüyor. |
-| 1.21.2 | Ayrı `codex/fabric-1.21.2` çalışma ağacında Minecraft 1.21.2, Fabric API 0.106.1, Sodium 0.6.0 beta 3 ve Iris 1.8.0 beta 6 ile derleme denendi. Özgün deponun 1.21.3 WIP Fabric kaynak değişiklikleri de denendi. Her iki derleme ilk 100 Java hatasında durdu; oyun testi yapılamadı. DimLib hâlâ 1.21.1 hedefli. |
+| 1.21.2 | Ayrı `codex/fabric-1.21.2` çalışma ağacında Minecraft 1.21.2, Fabric API 0.106.1, Sodium 0.6.0 beta 3 ve Iris 1.8.0 beta 6 ile port sürüyor. Özgün deponun 1.21.3 WIP çizim değişiklikleri kısmen aktarıldı. Tüm hatalar açıldığında Java derlemesi önce 252, son değişikliklerden sonra **58 hata** verdi; henüz derlenmiyor ve oyun testi yapılamadı. DimLib hâlâ 1.21.1 hedefli. |
 | 1.21.3 | Özgün deponun `upstream/1.21.3` WIP dalı ayrı çalışma ağacında derlendi. Derleyici ilk 100 Java hatasında durdu; oyun testi yapılamadı. |
 | 1.21.4–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
@@ -35,4 +35,4 @@ Kaynak davranış: [Immersive Portals Wiki — Portals](https://qouteall.fun/imm
 
 ## 1.21.2–1.21.3 derleme engelleri
 
-Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. 1.21.2 için kopyalanan WIP kaynak değişikliklerinden sonra bile derleme şu alanlarda duruyor: Minecraft chunk sırası ve mesafe yöneticisi sınıfları, varlık hasar/oluşturma API'si, `EntityRenderer` tip parametreleri, Fabric attachment ve blok oluşturma API'leri, portal render/shader sınıfları. 1.21.2'de `LevelHeightAccessor` bölüm aralığı ve `Direction` vektör adı doğrulanarak birkaç kaynak satırı uyarlanmıştır. Derleme tamamlanmadığından hiçbir 1.21.2/1.21.3 portal davranışı için olumlu sonuç ileri sürülmemektedir.
+Özgün deponun 1.21.3 dalı da tamamlanmamış bir porttur. 1.21.2'de Minecraft 1.21.2 sınıfları incelenerek yön vektörü, profiler, yükseklik sınırı, varlık oluşturma nedeni ve varlık tipi kayıt anahtarı uyarlamaları yapıldı. Artan engellerin önemli kısmı portal çizimi, chunk yönetimi, teleport paketi, dünya oluşturma ve DimLib'dir. Fabric API 0.106.1 içindeki attachment eşitleme sınıfları bulunmadığı için eski elle eşitleme çağrısı çıkarıldı; bu davranış oyun testinde ayrıca doğrulanmalıdır. Derleme tamamlanmadığından hiçbir 1.21.2/1.21.3 portal davranışı için olumlu sonuç ileri sürülmemektedir.

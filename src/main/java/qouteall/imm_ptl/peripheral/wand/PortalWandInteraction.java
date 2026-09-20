@@ -236,7 +236,7 @@ public class PortalWandInteraction {
             }
         }
         
-        Portal portal = Portal.ENTITY_TYPE.create(McHelper.getServerWorld(firstSideDimension));
+        Portal portal = Portal.ENTITY_TYPE.create(McHelper.getServerWorld(firstSideDimension), net.minecraft.world.entity.EntitySpawnReason.SPAWN_ITEM_USE);
         Validate.notNull(portal);
         portal.setOriginPos(
             firstSideLeftBottom
@@ -816,7 +816,7 @@ public class PortalWandInteraction {
             return;
         }
         
-        Portal portal = Portal.ENTITY_TYPE.create(player.level());
+        Portal portal = Portal.ENTITY_TYPE.create(player.level(), net.minecraft.world.entity.EntitySpawnReason.SPAWN_ITEM_USE);
         assert portal != null;
         
         portal.readPortalDataFromNbt(copyingSession.portalData);

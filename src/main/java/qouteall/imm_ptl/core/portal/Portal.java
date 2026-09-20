@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -16,11 +17,13 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerEntity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
@@ -84,7 +87,7 @@ public class Portal extends Entity implements
     PortalLike, IPEntityEventListenableEntity {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    public static final EntityType<Portal> ENTITY_TYPE = createPortalEntityType(Portal::new);
+    public static final EntityType<Portal> ENTITY_TYPE = createPortalEntityType("portal", Portal::new);
     
     public static final Event<Consumer<Portal>> CLIENT_PORTAL_ACCEPT_SYNC_EVENT =
         Helper.createConsumerEvent();
@@ -92,7 +95,7 @@ public class Portal extends Entity implements
         Helper.createConsumerEvent();
     
     public static <T extends Portal> EntityType<T> createPortalEntityType(
-        EntityType.EntityFactory<T> constructor
+        String id, EntityType.EntityFactory<T> constructor
     ) {
         return FabricEntityTypeBuilder.create(
                 MobCategory.MISC,
@@ -104,7 +107,15 @@ public class Portal extends Entity implements
             .trackRangeBlocks(96)
             .trackedUpdateRate(20)
             .forceTrackedVelocityUpdates(true)
-            .build();
+            .build(ResourceKey.create(
+                Registries.ENTITY_TYPE,
+                ResourceLocation.fromNamespaceAndPath("immersive_portals", id)
+            ));
+    }
+
+    @Override
+    public boolean hurtServer(ServerLevel world, DamageSource source, float amount) {
+        return false;
     }
     
     private static final AABB NULL_BOX =
@@ -1054,7 +1065,7 @@ public class Portal extends Entity implements
     }
     
     public Direction getApproximateFacingDirection() {
-        return Direction.getNearest(
+        return Direction.getApproximateNearest(
             getNormal().x, getNormal().y, getNormal().z
         );
     }
@@ -1653,11 +1664,11 @@ public class Portal extends Entity implements
     }
     
     public Direction getTransformedGravityDirection(Direction oldGravityDir) {
-        Vec3 oldGravityVec = Vec3.atLowerCornerOf(oldGravityDir.getNormal());
+        Vec3 oldGravityVec = Vec3.atLowerCornerOf(oldGravityDir.getUnitVec3i());
         
         Vec3 newGravityVec = transformLocalVecNonScale(oldGravityVec);
         
-        return Direction.getNearest(
+        return Direction.getApproximateNearest(
             newGravityVec.x, newGravityVec.y, newGravityVec.z
         );
     }

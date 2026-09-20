@@ -210,7 +210,7 @@ public class PortalRenderInfo implements AutoCloseable {
     }
     
     public static boolean renderAndDecideVisibility(Portal portal, Runnable queryRendering) {
-        ProfilerFiller profiler = Minecraft.getInstance().getProfiler();
+        ProfilerFiller profiler = net.minecraft.util.profiling.Profiler.get();
         
         boolean decision;
         if (IPGlobal.offsetOcclusionQuery) {

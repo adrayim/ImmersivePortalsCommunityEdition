@@ -360,7 +360,7 @@ public class ImmPtlChunkTracking {
     }
     
     private static void tick(MinecraftServer server) {
-        server.getProfiler().push("portal_chunk_tracking");
+        net.minecraft.util.profiling.Profiler.get().push("portal_chunk_tracking");
         
         boolean updates = false;
         long gameTime = server.overworld().getGameTime();
@@ -389,7 +389,7 @@ public class ImmPtlChunkTracking {
             dimTicketManager.tick(world);
         }
         
-        server.getProfiler().pop();
+        net.minecraft.util.profiling.Profiler.get().pop();
         
         if (updates) {
             EntitySync.update(server);

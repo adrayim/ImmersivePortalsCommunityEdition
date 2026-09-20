@@ -107,7 +107,7 @@ public class CustomTextOverlay {
         
         Font font = minecraft.gui.getFont();
         
-        minecraft.getProfiler().push("imm_ptl_custom_overlay");
+        net.minecraft.util.profiling.Profiler.get().push("imm_ptl_custom_overlay");
         if (renderAtBottomCenter) {
             // Note: the parchment names are incorrect
             multiLineLabelCache.renderCentered(
@@ -128,6 +128,6 @@ public class CustomTextOverlay {
         
         guiGraphics.pose().popPose();
         
-        minecraft.getProfiler().pop();
+        net.minecraft.util.profiling.Profiler.get().pop();
     }
 }

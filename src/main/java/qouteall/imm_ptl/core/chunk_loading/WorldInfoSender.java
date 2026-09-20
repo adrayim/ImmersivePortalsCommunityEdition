@@ -17,7 +17,7 @@ import java.util.Set;
 public class WorldInfoSender {
     public static void init() {
         ServerTickEvents.END_SERVER_TICK.register((server) -> {
-            server.getProfiler().push("portal_send_world_info");
+            net.minecraft.util.profiling.Profiler.get().push("portal_send_world_info");
             if (McHelper.getServerGameTime() % 100 == 42) {
                 for (ServerPlayer player : server.getPlayerList().getPlayers()) {
                     Set<ResourceKey<Level>> visibleDimensions = ImmPtlChunkTracking.getVisibleDimensions(player);
@@ -39,7 +39,7 @@ public class WorldInfoSender {
                     
                 }
             }
-            server.getProfiler().pop();
+            net.minecraft.util.profiling.Profiler.get().pop();
         });
     }
     

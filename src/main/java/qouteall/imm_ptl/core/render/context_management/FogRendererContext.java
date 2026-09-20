@@ -67,7 +67,7 @@ public class FogRendererContext {
     ) {
         Minecraft client = Minecraft.getInstance();
         
-        client.getProfiler().push("get_fog_color");
+        net.minecraft.util.profiling.Profiler.get().push("get_fog_color");
         
         ClientLevel oldWorld = client.level;
         
@@ -104,7 +104,7 @@ public class FogRendererContext {
             swappingManager.popSwapping();
             client.level = oldWorld;
             
-            client.getProfiler().pop();
+            net.minecraft.util.profiling.Profiler.get().pop();
         }
     }
     

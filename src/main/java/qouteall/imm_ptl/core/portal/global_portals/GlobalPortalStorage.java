@@ -250,7 +250,7 @@ public class GlobalPortalStorage extends SavedData {
         ResourceLocation entityId = McHelper.newResourceLocation(compoundTag.getString("entity_type"));
         EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.get(entityId);
         
-        Entity e = entityType.create(currWorld);
+        Entity e = entityType.create(currWorld, net.minecraft.world.entity.EntitySpawnReason.LOAD);
         e.load(compoundTag);
         
         ((Portal) e).isGlobalPortal = true;

@@ -3,8 +3,6 @@ package qouteall.imm_ptl.core.chunk_loading;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import net.fabricmc.fabric.impl.attachment.AttachmentTargetImpl;
-import net.fabricmc.fabric.impl.attachment.sync.AttachmentChange;
 import net.minecraft.network.protocol.game.ClientboundChunkBatchFinishedPacket;
 import net.minecraft.network.protocol.game.ClientboundChunkBatchStartPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -28,7 +26,6 @@ import qouteall.imm_ptl.core.network.PacketRedirection;
 import qouteall.q_misc_util.Helper;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -204,26 +201,8 @@ public class PlayerChunkLoading {
                     )
                 );
                 
-                onSendPacket(serverGamePacketListenerImpl, levelChunk);
             }
         );
-    }
-    
-    /**
-     * Fabric API's mixin {@link net.fabricmc.fabric.mixin.attachment.ChunkDataSenderMixin}
-     * is cancelled in {@link qouteall.imm_ptl.core.mixin.common.chunk_sync.MixinPlayerChunkSender}.
-     * So manually implement it here.
-     * */
-    @IPVanillaCopy
-    private static void onSendPacket(ServerGamePacketListenerImpl listener, LevelChunk chunk) {
-        ServerPlayer player = listener.player;
-        
-        List<AttachmentChange> changes = new ArrayList<>();
-        ((AttachmentTargetImpl) chunk).fabric_computeInitialSyncChanges(player, changes::add);
-        
-        if (!changes.isEmpty()) {
-            AttachmentChange.partitionAndSendPackets(changes, player);
-        }
     }
     
     /**

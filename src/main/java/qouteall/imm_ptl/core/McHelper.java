@@ -396,7 +396,7 @@ public class McHelper {
     
     
     public static Portal copyEntity(Portal portal) {
-        Portal newPortal = ((Portal) portal.getType().create(portal.level()));
+        Portal newPortal = ((Portal) portal.getType().create(portal.level(), net.minecraft.world.entity.EntitySpawnReason.TRIGGERED));
         
         Validate.notNull(newPortal);
         
@@ -433,7 +433,9 @@ public class McHelper {
     }
     
     public static void invokeCommandAs(Entity commandSender, List<String> commandList) {
-        CommandSourceStack commandSource = commandSender.createCommandSourceStack().withPermission(2).withSuppressedOutput();
+        CommandSourceStack commandSource = commandSender.createCommandSourceStackForNameResolution(
+            (ServerLevel) commandSender.level()
+        ).withPermission(2).withSuppressedOutput();
         MinecraftServer server = commandSender.getServer();
         assert server != null;
         Commands commandManager = server.getCommands();
@@ -862,11 +864,11 @@ public class McHelper {
     }
     
     public static int getMinY(LevelAccessor world) {
-        return world.getMinBuildHeight();
+        return world.getMinY();
     }
     
     public static int getMaxYExclusive(LevelAccessor world) {
-        return world.getMaxBuildHeight();
+        return world.getMaxY() + 1;
     }
     
     public static int getMaxContentYExclusive(LevelAccessor world) {

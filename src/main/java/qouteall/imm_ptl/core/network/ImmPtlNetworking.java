@@ -203,7 +203,7 @@ public class ImmPtlNetworking {
             }
             else {
                 // spawn new portal
-                Entity entity = entityType.create(world);
+                Entity entity = entityType.create(world, net.minecraft.world.entity.EntitySpawnReason.LOAD);
                 Validate.notNull(entity, "Entity type is null");
                 
                 if (!(entity instanceof Portal portal)) {

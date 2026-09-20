@@ -227,11 +227,11 @@ public class MyGameRenderer {
         
         //invoke rendering
         invokeWrapper.accept(() -> {
-            client.getProfiler().push("render_portal_content");
+            net.minecraft.util.profiling.Profiler.get().push("render_portal_content");
             client.gameRenderer.renderLevel(
                 client.getTimer()
             );
-            client.getProfiler().pop();
+            net.minecraft.util.profiling.Profiler.get().pop();
         });
         
         SodiumInterface.invoker.switchContextWithCurrentWorldRenderer(newSodiumContext);

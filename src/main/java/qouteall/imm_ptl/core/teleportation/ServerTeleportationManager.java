@@ -332,7 +332,7 @@ public class ServerTeleportationManager {
         Vec3 newEyePos
     ) {
         MinecraftServer server = player.server;
-        server.getProfiler().push("portal_teleport");
+        net.minecraft.util.profiling.Profiler.get().push("portal_teleport");
         
         ServerLevel fromWorld = (ServerLevel) player.level();
         ServerLevel toWorld = server.getLevel(dimensionTo);
@@ -354,7 +354,7 @@ public class ServerTeleportationManager {
             player, newEyePos, newEyePos, 1
         );
         
-        server.getProfiler().pop();
+        net.minecraft.util.profiling.Profiler.get().pop();
     }
     
     public void forceTeleportPlayer(
@@ -642,7 +642,7 @@ public class ServerTeleportationManager {
         if (recreateEntity) {
             Entity oldEntity = entity;
             Entity newEntity;
-            newEntity = entity.getType().create(toWorld);
+            newEntity = entity.getType().create(toWorld, net.minecraft.world.entity.EntitySpawnReason.DIMENSION_TRAVEL);
             if (newEntity == null) {
                 return oldEntity;
             }
@@ -690,7 +690,7 @@ public class ServerTeleportationManager {
         
         Entity oldEntity = entity;
         Entity newEntity;
-        newEntity = entity.getType().create(toWorld);
+        newEntity = entity.getType().create(toWorld, net.minecraft.world.entity.EntitySpawnReason.DIMENSION_TRAVEL);
         Validate.isTrue(newEntity != null);
         
         newEntity.restoreFrom(oldEntity);

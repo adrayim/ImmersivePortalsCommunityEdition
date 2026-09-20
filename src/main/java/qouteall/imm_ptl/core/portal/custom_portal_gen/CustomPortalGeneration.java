@@ -262,9 +262,9 @@ public class CustomPortalGeneration {
             return false;
         }
         
-        world.getProfiler().push("custom_portal_gen_perform");
+        net.minecraft.util.profiling.Profiler.get().push("custom_portal_gen_perform");
         boolean result = form.perform(this, world, startPos, toWorld, triggeringEntity);
-        world.getProfiler().pop();
+        net.minecraft.util.profiling.Profiler.get().pop();
         return result;
     }
     
