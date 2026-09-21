@@ -166,7 +166,7 @@ public class DynamicDimensionsImpl {
             
             try {
                 while (world.getChunkSource().chunkMap.hasWork()) {
-                    world.getChunkSource().removeTicketsOnClosing();
+                    world.getChunkSource().deactivateTicketsOnClosing();
                     world.getChunkSource().tick(() -> true, false);
                     world.getChunkSource().pollTask();
                     server.pollTask();

@@ -503,12 +503,12 @@ public class IntBox {
     public static IntBox fromTag(CompoundTag tag) {
         return new IntBox(
             new BlockPos(
-                tag.getInt("lX"),
+                tag.getIntOr("lX", 0),
                 tag.getInt("lY"),
                 tag.getInt("lZ")
             ),
             new BlockPos(
-                tag.getInt("hX"),
+                tag.getIntOr("hX", 0),
                 tag.getInt("hY"),
                 tag.getInt("hZ")
             )

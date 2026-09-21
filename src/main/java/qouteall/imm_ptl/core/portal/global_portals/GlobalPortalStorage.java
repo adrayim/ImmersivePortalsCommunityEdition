@@ -208,13 +208,13 @@ public class GlobalPortalStorage extends SavedData {
         data = newData;
         
         if (tag.contains("version")) {
-            version = tag.getInt("version");
+            version = tag.getIntOr("version", 0);
         }
         
         if (tag.contains("bedrockReplacement")) {
             bedrockReplacement = NbtUtils.readBlockState(
                 currWorld.holderLookup(Registries.BLOCK),
-                tag.getCompound("bedrockReplacement")
+                tag.getCompoundOrEmpty("bedrockReplacement")
             );
         }
         else {
@@ -247,7 +247,7 @@ public class GlobalPortalStorage extends SavedData {
     }
     
     private static Portal readPortalFromTag(Level currWorld, CompoundTag compoundTag) {
-        ResourceLocation entityId = McHelper.newResourceLocation(compoundTag.getString("entity_type"));
+        ResourceLocation entityId = McHelper.newResourceLocation(compoundTag.getStringOr("entity_type", ""));
         EntityType<?> entityType = BuiltInRegistries.ENTITY_TYPE.getValue(entityId);
         
         Entity e = entityType.create(currWorld, net.minecraft.world.entity.EntitySpawnReason.LOAD);

@@ -110,7 +110,7 @@ public class DimIntIdMap {
     }
     
     public static DimIntIdMap fromTag(CompoundTag tag) {
-        CompoundTag intids = tag.getCompound("intids");
+        CompoundTag intids = tag.getCompoundOrEmpty("intids");
         
         Object2IntOpenHashMap<ResourceKey<Level>> toIntegerId = new Object2IntOpenHashMap<>();
         Int2ObjectOpenHashMap<ResourceKey<Level>> fromIntegerId = new Int2ObjectOpenHashMap<>();

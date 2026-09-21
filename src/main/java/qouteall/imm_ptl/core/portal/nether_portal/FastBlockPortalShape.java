@@ -238,7 +238,7 @@ public record FastBlockPortalShape(
     }
     
     public static @Nullable FastBlockPortalShape fromTag(CompoundTag tag) {
-        int axisInt = tag.getInt("axis");
+        int axisInt = tag.getIntOr("axis", 0);
         if (axisInt < 0 || axisInt > 2) {
             LOGGER.error("invalid axis {}", tag);
             return null;

@@ -57,7 +57,7 @@ public class BlockPortalShape {
     ) {
         this(
             readArea(tag.getList("poses", 3)),
-            Direction.Axis.values()[tag.getInt("axis")]
+            Direction.Axis.values()[tag.getIntOr("axis", 0)]
         );
     }
     

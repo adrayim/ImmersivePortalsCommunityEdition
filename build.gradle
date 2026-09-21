@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.8-SNAPSHOT'
+    id 'fabric-loom' version '1.10.5'
 
     id 'maven-publish'
 
@@ -100,8 +100,8 @@ dependencies {
 
     modApi "local.dimlib:dimlib:${dimlib_version}"
     include "local.dimlib:dimlib:${dimlib_version}"
-    modLocalRuntime "maven.modrinth:midnightlib:1.6.4-fabric"
-    include "maven.modrinth:midnightlib:1.6.4-fabric"
+    modLocalRuntime "maven.modrinth:midnightlib:1.7.3+1.21.4-fabric"
+    include "maven.modrinth:midnightlib:1.7.3+1.21.4-fabric"
 
     // put these into inner mod to reduce duplicate MC jar
 
