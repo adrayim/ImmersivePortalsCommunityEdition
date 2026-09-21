@@ -104,7 +104,7 @@ public class MiscNetworking {
             ImmutableMap.Builder<ResourceKey<Level>, ResourceKey<DimensionType>> builder =
                 new ImmutableMap.Builder<>();
             
-            for (String key : dimTypeTag.getAllKeys()) {
+            for (String key : dimTypeTag.keySet()) {
                 ResourceKey<Level> dimId = ResourceKey.create(
                     Registries.DIMENSION,
                     McHelper.newResourceLocation(key)

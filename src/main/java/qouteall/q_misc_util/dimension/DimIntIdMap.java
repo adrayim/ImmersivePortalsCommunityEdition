@@ -115,7 +115,7 @@ public class DimIntIdMap {
         Object2IntOpenHashMap<ResourceKey<Level>> toIntegerId = new Object2IntOpenHashMap<>();
         Int2ObjectOpenHashMap<ResourceKey<Level>> fromIntegerId = new Int2ObjectOpenHashMap<>();
         
-        intids.getAllKeys().forEach(dim -> {
+        intids.keySet().forEach(dim -> {
             if (intids.contains(dim)) {
                 int intid = intids.getInt(dim);
                 ResourceKey<Level> dimId = Helper.dimIdToKey(dim);

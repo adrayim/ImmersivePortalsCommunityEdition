@@ -517,7 +517,7 @@ public class Helper {
         Tag term = tag.get(tagName);
         
         if (term instanceof StringTag) {
-            String id = ((StringTag) term).getAsString();
+            String id = ((StringTag) term).asString().orElse("");
             return dimIdToKey(id);
         }
         

@@ -346,7 +346,7 @@ public class Portal extends Entity implements
         if (compoundTag.contains("commandsOnTeleported")) {
             ListTag list = compoundTag.getList("commandsOnTeleported", 8);
             commandsOnTeleported = list.stream()
-                .map(t -> ((StringTag) t).getAsString()).collect(Collectors.toList());
+                .map(t -> ((StringTag) t).asString().orElse("")).collect(Collectors.toList());
         }
         else {
             commandsOnTeleported = null;
@@ -1779,7 +1779,7 @@ public class Portal extends Entity implements
     public void updatePortalFromNbt(CompoundTag newNbt) {
         CompoundTag data = writePortalDataToNbt();
         
-        newNbt.getAllKeys().forEach(
+        newNbt.keySet().forEach(
             key -> data.put(key, newNbt.get(key))
         );
         
