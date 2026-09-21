@@ -75,7 +75,7 @@ public class PortalAnimation {
         }
         
         if (tag.contains("thisSideAnimations")) {
-            ListTag listTag = tag.getList("thisSideAnimations", 10);
+            ListTag listTag = tag.getListOrEmpty("thisSideAnimations");
             thisSideAnimations = Helper.listTagToList(listTag, PortalAnimationDriver::fromTag);
         }
         else {
@@ -83,7 +83,7 @@ public class PortalAnimation {
         }
         
         if (tag.contains("otherSideAnimations")) {
-            ListTag listTag = tag.getList("otherSideAnimations", 10);
+            ListTag listTag = tag.getListOrEmpty("otherSideAnimations");
             otherSideAnimations = Helper.listTagToList(listTag, PortalAnimationDriver::fromTag);
         }
         else {

@@ -429,7 +429,7 @@ public class PortalCommand {
                 .executes(context -> processPortalTargetedCommand(
                     context,
                     portal -> {
-                        Component name = ComponentArgument.getComponent(context, "name");
+                        Component name = ComponentArgument.getResolvedComponent(context, "name");
                         portal.setCustomName(name);
                     }
                 ))

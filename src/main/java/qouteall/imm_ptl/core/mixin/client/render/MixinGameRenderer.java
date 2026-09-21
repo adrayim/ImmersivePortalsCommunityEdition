@@ -176,9 +176,11 @@ public abstract class MixinGameRenderer implements IEGameRenderer {
     private void wrapRenderLevel(
         LevelRenderer instance, GraphicsResourceAllocator graphicsResourceAllocator, DeltaTracker deltaTracker, boolean bl, Camera camera, GameRenderer gameRenderer, Matrix4f modelView, Matrix4f projection, Operation<Void> original
     ) {
+        PortalRenderer.setCurrentProjectionMatrix(projection);
         original.call(
             instance, graphicsResourceAllocator, deltaTracker, bl, camera, gameRenderer, modelView, projection
         );
+        PortalRenderer.setCurrentProjectionMatrix(projection);
         
         IPCGlobal.renderer.onBeforeHandRendering(modelView);
     }

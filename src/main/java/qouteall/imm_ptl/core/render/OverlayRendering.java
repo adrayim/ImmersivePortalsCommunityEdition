@@ -11,7 +11,8 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.block.model.BlockStateModel;
+import net.minecraft.client.renderer.block.model.BlockModelPart;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -69,18 +70,21 @@ public class OverlayRendering {
         }
     }
     
-    public static List<BakedQuad> getQuads(BakedModel model, BlockState blockState, Vec3 portalNormal) {
+    public static List<BakedQuad> getQuads(BlockStateModel model, BlockState blockState, Vec3 portalNormal) {
         Direction facing = Direction.getApproximateNearest(portalNormal.x, portalNormal.y, portalNormal.z);
         
         List<BakedQuad> result = new ArrayList<>();
         
-        result.addAll(model.getQuads(blockState, facing, random));
-        
-        result.addAll(model.getQuads(blockState, null, random));
+        for (BlockModelPart part : model.collectParts(random)) {
+            result.addAll(part.getQuads(facing));
+            result.addAll(part.getQuads(null));
+        }
         
         if (result.isEmpty()) {
             for (Direction direction : Direction.values()) {
-                result.addAll(model.getQuads(blockState, direction, random));
+                for (BlockModelPart part : model.collectParts(random)) {
+                    result.addAll(part.getQuads(direction));
+                }
             }
         }
         
@@ -129,7 +133,7 @@ public class OverlayRendering {
         
         matrixStack.translate(offset.x, offset.y, offset.z);
         
-        BakedModel model = blockRenderManager.getBlockModel(blockState);
+        BlockStateModel model = blockRenderManager.getBlockModel(blockState);
         RenderType renderLayer = Sheets.translucentItemSheet();
         VertexConsumer buffer = vertexConsumerProvider.getBuffer(renderLayer);
         
@@ -148,7 +152,7 @@ public class OverlayRendering {
             }
             
             for (BakedQuad quad : quads) {
-                SodiumInterface.invoker.markSpriteActive(quad.getSprite());
+                SodiumInterface.invoker.markSpriteActive(quad.sprite());
                 buffer.putBulkData(
                     matrixStack.last(),
                     quad,

@@ -12,7 +12,8 @@ public class MixinAbstractMinecartEntity {
     // for debugging
     @Inject(
         method = "lerpTo",
-        at = @At("RETURN")
+        at = @At("RETURN"),
+        require = 0
     )
     private void onUpdateTracketPositionAndAngles(
         double x, double y, double z, float yaw, float pitch, int steps, CallbackInfo ci

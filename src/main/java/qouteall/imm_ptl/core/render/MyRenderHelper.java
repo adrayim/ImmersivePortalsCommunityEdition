@@ -1,574 +1,305 @@
 package qouteall.imm_ptl.core.render;
 
-import com.mojang.blaze3d.ProjectionType;
-import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.buffers.BufferType;
+import com.mojang.blaze3d.buffers.BufferUsage;
+import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.shaders.Uniform;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.DepthTestFunction;
+import com.mojang.blaze3d.shaders.UniformType;
+import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.Raster;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.CoreShaders;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderDefines;
-import net.minecraft.client.renderer.ShaderProgram;
-import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.apache.commons.lang3.Validate;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 import qouteall.imm_ptl.core.CHelper;
 import qouteall.imm_ptl.core.ClientWorldLoader;
 import qouteall.imm_ptl.core.McHelper;
 import qouteall.imm_ptl.core.miscellaneous.IPVanillaCopy;
-import qouteall.imm_ptl.core.mixin.client.accessor.CoreShadersAccessor;
 import qouteall.imm_ptl.core.portal.Portal;
+import qouteall.imm_ptl.core.render.ViewAreaRenderer;
 import qouteall.imm_ptl.core.render.context_management.PortalRendering;
 import qouteall.imm_ptl.core.render.context_management.RenderStates;
 import qouteall.imm_ptl.core.render.context_management.WorldRenderInfo;
-import qouteall.q_misc_util.my_util.SignalBiArged;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.Raster;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.stream.IntStream;
-
-import static org.lwjgl.opengl.GL11.GL_BACK;
-import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_COMPONENT;
-import static org.lwjgl.opengl.GL11.GL_FLOAT;
-import static org.lwjgl.opengl.GL11.GL_FRONT;
-import static org.lwjgl.opengl.GL11.GL_RED;
-import static org.lwjgl.opengl.GL11.glCullFace;
-import static org.lwjgl.opengl.GL11.glReadPixels;
-
-@SuppressWarnings("resource")
 public class MyRenderHelper {
-
     public static final Minecraft client = Minecraft.getInstance();
-
-    public static final ShaderProgram BLIT_SCREEN_NOBLEND = CoreShadersAccessor.register(
-        "blit_screen_noblend",
-        DefaultVertexFormat.BLIT_SCREEN,
-        ShaderDefines.EMPTY
-    );
-
-    public static final ShaderProgram PORTAL_AREA = CoreShadersAccessor.register(
-        "portal_area",
-        DefaultVertexFormat.POSITION_COLOR,
-        ShaderDefines.EMPTY
-    );
-
-    public static final ShaderProgram PORTAL_DRAW_FB_IN_AREA = CoreShadersAccessor.register(
-        "portal_draw_fb_in_area",
-        DefaultVertexFormat.POSITION_COLOR,
-        ShaderDefines.EMPTY
-    );
-
-//    public static final SignalBiArged<ResourceProvider, Consumer<ShaderInstance>> loadShaderSignal =
-//        new SignalBiArged<>();
+    public static final RenderPipeline PORTAL_DRAW_FB_IN_AREA_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/portal_draw_fb_in_area")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/portal_draw_fb_in_area")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/portal_draw_fb_in_area")).withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES).withSampler("DiffuseSampler").withUniform("IP_ModelViewMat", UniformType.MATRIX4X4).withUniform("IP_ProjMat", UniformType.MATRIX4X4).withUniform("w", UniformType.FLOAT).withUniform("h", UniformType.FLOAT).withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST).withCull(false).withoutBlend().build());
+    public static final RenderPipeline PORTAL_AREA_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/portal_area")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES).withUniform("IP_ModelViewMat", UniformType.MATRIX4X4).withUniform("IP_ProjMat", UniformType.MATRIX4X4).withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST).withoutBlend().build());
+    public static final RenderPipeline PORTAL_AREA_NO_COLOR_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/portal_area_no_color")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES).withUniform("IP_ModelViewMat", UniformType.MATRIX4X4).withUniform("IP_ProjMat", UniformType.MATRIX4X4).withDepthTestFunction(DepthTestFunction.LEQUAL_DEPTH_TEST).withColorWrite(false).withDepthWrite(true).withoutBlend().build());
+    public static final RenderPipeline PORTAL_AREA_NO_COLOR_NO_DEPTH_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/portal_area_no_color_no_depth")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES).withUniform("IP_ModelViewMat", UniformType.MATRIX4X4).withUniform("IP_ProjMat", UniformType.MATRIX4X4).withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).withColorWrite(false).withDepthWrite(false).withoutBlend().build());
+    public static final RenderPipeline PORTAL_AREA_DEPTH_CLEAR_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/portal_area_depth_clear")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/portal_area")).withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES).withUniform("IP_ModelViewMat", UniformType.MATRIX4X4).withUniform("IP_ProjMat", UniformType.MATRIX4X4).withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).withColorWrite(false).withDepthWrite(true).withoutBlend().build());
+    public static final RenderPipeline BLIT_SCREEN_NOBLEND_PIPELINE = RenderPipelines.register((RenderPipeline)RenderPipeline.builder((RenderPipeline.Snippet[])new RenderPipeline.Snippet[0]).withLocation(McHelper.newResourceLocation("immersive_portals:pipeline/blit_screen_noblend")).withVertexShader(McHelper.newResourceLocation("immersive_portals:core/blit_screen_noblend")).withFragmentShader(McHelper.newResourceLocation("immersive_portals:core/blit_screen_noblend")).withVertexFormat(DefaultVertexFormat.BLIT_SCREEN, VertexFormat.Mode.QUADS).withSampler("DiffuseSampler").withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST).withoutBlend().build());
+    private static boolean debugEnabled = false;
 
     public static void init() {
-
-//        loadShaderSignal.connect((resourceManager, resultConsumer) -> {
-//            try {
-//                DrawFbInAreaShader shader = new DrawFbInAreaShader(
-//                    getResourceFactory(resourceManager),
-//                    "portal_draw_fb_in_area",
-//                    DefaultVertexFormat.POSITION_COLOR
-//                );
-//                resultConsumer.accept(shader);
-//                drawFbInAreaShader = shader;
-//            }
-//            catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-
-//        loadShaderSignal.connect((resourceManager, resultConsumer) -> {
-//            try {
-//                ShaderInstance shader = new ShaderInstance(
-//                    getResourceFactory(resourceManager),
-//                    "portal_area",
-//                    DefaultVertexFormat.POSITION_COLOR
-//                );
-//                resultConsumer.accept(shader);
-//                portalAreaShader = shader;
-//            }
-//            catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//
-//        loadShaderSignal.connect((resourceManager, resultConsumer) -> {
-//            try {
-//                ShaderInstance shader = new ShaderInstance(
-//                    getResourceFactory(resourceManager),
-//                    "blit_screen_noblend",
-//                    DefaultVertexFormat.POSITION_TEX_COLOR
-//                );
-//                resultConsumer.accept(shader);
-//                blitScreenNoBlendShader = shader;
-//            }
-//            catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
     }
 
-//    // vanilla hardcodes the shader namespace to be "minecraft"
-//    private static ResourceProvider getResourceFactory(ResourceProvider resourceManager) {
-//        ResourceProvider resourceFactory = new ResourceProvider() {
-//            @Override
-//            public Optional<Resource> getResource(ResourceLocation resourceLocation) {
-//                ResourceLocation corrected = McHelper.newResourceLocation(
-//                    "immersive_portals", resourceLocation.getPath());
-//                return resourceManager.getResource(corrected);
-//            }
-//        };
-//        return resourceFactory;
-//    }
+    /*
+     * WARNING - Removed try catching itself - possible behaviour change.
+     */
+    public static void drawMesh(RenderPipeline pipeline, MeshData meshData, Consumer<RenderPass> configureRenderPass) {
+        try (MeshData meshData2 = meshData;){
+            MeshData.DrawState drawState = meshData.drawState();
+            GpuBuffer vertexBuffer = RenderSystem.getDevice().createBuffer(() -> "Immersive Portals vertex buffer", BufferType.VERTICES, BufferUsage.STREAM_WRITE, meshData.vertexBuffer());
+            GpuBuffer indexBuffer = null;
+            boolean ownsIndexBuffer = false;
+            try {
+                VertexFormat.IndexType indexType;
+                if (meshData.indexBuffer() != null) {
+                    indexBuffer = RenderSystem.getDevice().createBuffer(() -> "Immersive Portals index buffer", BufferType.INDICES, BufferUsage.STREAM_WRITE, meshData.indexBuffer());
+                    indexType = drawState.indexType();
+                    ownsIndexBuffer = true;
+                } else {
+                    RenderSystem.AutoStorageIndexBuffer sequentialBuffer = RenderSystem.getSequentialBuffer((VertexFormat.Mode)drawState.mode());
+                    indexBuffer = sequentialBuffer.getBuffer(drawState.indexCount());
+                    indexType = sequentialBuffer.type();
+                }
+                RenderTarget target = client.getMainRenderTarget();
+                try (RenderPass renderPass = target.getDepthTexture() != null ? RenderSystem.getDevice().createCommandEncoder().createRenderPass(target.getColorTexture(), OptionalInt.empty(), target.getDepthTexture(), OptionalDouble.empty()) : RenderSystem.getDevice().createCommandEncoder().createRenderPass(target.getColorTexture(), OptionalInt.empty());){
+                    renderPass.setPipeline(pipeline);
+                    renderPass.setVertexBuffer(0, vertexBuffer);
+                    renderPass.setIndexBuffer(indexBuffer, indexType);
+                    if (configureRenderPass != null) {
+                        configureRenderPass.accept(renderPass);
+                    }
+                    renderPass.drawIndexed(0, drawState.indexCount());
+                }
+            }
+            finally {
+                vertexBuffer.close();
+                if (ownsIndexBuffer && indexBuffer != null) {
+                    indexBuffer.close();
+                }
+            }
+        }
+    }
 
-//    public static class DrawFbInAreaShader extends ShaderInstance {
-//
-//        public final Uniform uniformW;
-//        public final Uniform uniformH;
-//
-//        public DrawFbInAreaShader(
-//            ResourceProvider factory, String name, VertexFormat format
-//        ) throws IOException {
-//            super(factory, name, format);
-//
-//            uniformW = getUniform("w");
-//            uniformH = getUniform("h");
-//        }
-//
-//        void loadWidthHeight(int w, int h) {
-//            uniformW.set((float) w);
-//            uniformH.set((float) h);
-//        }
-//    }
-//
-//    public static DrawFbInAreaShader drawFbInAreaShader;
-//    public static ShaderInstance portalAreaShader;
-//    public static ShaderInstance blitScreenNoBlendShader;
-//
-    @SuppressWarnings("SuspiciousNameCombination")
-    public static void drawPortalAreaWithFramebuffer(
-        Portal portal,
-        RenderTarget textureProvider,
-        Matrix4f modelViewMatrix,
-        Matrix4f projectionMatrix
-    ) {
+    public static void drawPortalAreaWithFramebuffer(Portal portal, RenderTarget textureProvider, Matrix4f modelViewMatrix, Matrix4f projectionMatrix) {
+        MyRenderHelper.drawPortalAreaWithFramebuffer(portal, textureProvider, modelViewMatrix, projectionMatrix, CHelper.getCurrentCameraPos());
+    }
 
-        GlStateManager._colorMask(true, true, true, true);
+    public static void drawPortalAreaWithFramebuffer(Portal portal, RenderTarget textureProvider, Matrix4f modelViewMatrix, Matrix4f projectionMatrix, Vec3 cameraPos) {
+        GlStateManager._colorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
         GlStateManager._enableDepthTest();
-        GlStateManager._depthMask(true);
-        GlStateManager._viewport(0, 0, textureProvider.width, textureProvider.height);
-
-        RenderSystem.setShader(PORTAL_DRAW_FB_IN_AREA);
-        CompiledShaderProgram shader = RenderSystem.getShader();
-
-        Objects.requireNonNull(shader, "shader is null")
-            .bindSampler("DiffuseSampler", textureProvider.getColorTextureId());
-        Objects.requireNonNull(shader.getUniform("w"), "no w")
-            .set(textureProvider.width);
-        Objects.requireNonNull(shader.getUniform("h"), "no h")
-            .set(textureProvider.height);
-
-        if (shader.MODEL_VIEW_MATRIX != null) {
-            shader.MODEL_VIEW_MATRIX.set(modelViewMatrix);
-        }
-
-        if (shader.PROJECTION_MATRIX != null) {
-            shader.PROJECTION_MATRIX.set(projectionMatrix);
-        }
-
-        shader.apply();
-
-        ViewAreaRenderer.buildPortalViewAreaTrianglesBuffer(
-            Vec3.ZERO,//fog
-            portal,
-            CHelper.getCurrentCameraPos(),
-            RenderStates.getPartialTick()
-        );
-
-        shader.clear();
-
-        RenderSystem.clearShader();
+        GlStateManager._depthMask((boolean)true);
+        RenderTarget target = client.getMainRenderTarget();
+        GlStateManager._viewport((int)0, (int)0, (int)target.viewWidth, (int)target.viewHeight);
+        GlStateManager._disableBlend();
+        ViewAreaRenderer.buildPortalViewAreaTrianglesBuffer(Vec3.ZERO, portal, cameraPos, RenderStates.getPartialTick(), PORTAL_DRAW_FB_IN_AREA_PIPELINE, renderPass -> {
+            renderPass.bindSampler("DiffuseSampler", textureProvider.getColorTexture());
+            renderPass.setUniform("IP_ModelViewMat", modelViewMatrix);
+            renderPass.setUniform("IP_ProjMat", projectionMatrix);
+            renderPass.setUniform("w", new float[]{textureProvider.viewWidth});
+            renderPass.setUniform("h", new float[]{textureProvider.viewHeight});
+        });
+        GlStateManager._enableBlend();
+        GlStateManager._blendFuncSeparate((int)770, (int)771, (int)1, (int)0);
     }
 
     public static void renderScreenTriangle() {
-        renderScreenTriangle(255, 255, 255, 255);
+        MyRenderHelper.renderScreenTriangle(255, 255, 255, 255);
+    }
+
+    public static void renderScreenTriangleNoColor(boolean writeDepth) {
+        MyRenderHelper.renderScreenTriangle(255, 255, 255, 255, writeDepth ? PORTAL_AREA_DEPTH_CLEAR_PIPELINE : PORTAL_AREA_NO_COLOR_NO_DEPTH_PIPELINE);
     }
 
     public static void renderScreenTriangle(Vec3 color) {
-        renderScreenTriangle(
-            (int) (color.x * 255),
-            (int) (color.y * 255),
-            (int) (color.z * 255),
-            255
-        );
+        MyRenderHelper.renderScreenTriangle((int)(color.x * 255.0), (int)(color.y * 255.0), (int)(color.z * 255.0), 255);
     }
 
-//    public static void testOneTriangle(int r, int g, int b, int a) {
-//        ShaderInstance shader = GameRenderer.getPositionColorShader();
-//        Validate.notNull(shader);
-//
-//        Matrix4f identityMatrix = new Matrix4f();
-//        identityMatrix.identity();
-//
-//        shader.MODEL_VIEW_MATRIX.set(identityMatrix);
-//        shader.PROJECTION_MATRIX.set(identityMatrix);
-//
-//        shader.apply();
-//
-//        Tesselator tessellator = Tesselator.getInstance();
-//        BufferBuilder bufferBuilder = tessellator
-//            .begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-//
-//        // upper triangle
-////        bufferBuilder.addVertex(1, -1, 0).setColor(r, g, b, a)
-////            ;
-////        bufferBuilder.addVertex(1, 1, 0).setColor(r, g, b, a)
-////            ;
-////        bufferBuilder.addVertex(-1, 1, 0).setColor(r, g, b, a)
-////            ;
-//
-//        // down triangle
-//        bufferBuilder.addVertex(-1, 1, 0).setColor(r, g, b, a);
-//        bufferBuilder.addVertex(-1, -1, 0).setColor(r, g, b, a);
-//        bufferBuilder.addVertex(1, -1, 0).setColor(r, g, b, a);
-//
-//        bufferBuilder.addVertex(1, 0, 0).setColor(r, g, b, a);
-//        bufferBuilder.addVertex(0, 1, 0).setColor(r, g, b, a);
-//        bufferBuilder.addVertex(-1, 0, 0).setColor(r, g, b, a);
-//
-//        BufferUploader.draw(bufferBuilder.build());
-//
-//        shader.clear();
-//    }
-
-    /**
-     * {@link RenderTarget#blitAndBlendToScreen}
-     */
-    @IPVanillaCopy
-    public static void renderScreenTriangle(int r, int g, int b, int a) {
-        ShaderProgram shader = CoreShaders.POSITION_COLOR;
-        Validate.notNull(shader, "Position color shader is null");
-
+    public static void testOneTriangle(int r, int g, int b, int a) {
         Matrix4f identityMatrix = new Matrix4f();
         identityMatrix.identity();
-        Matrix4f previousProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
-        ProjectionType previousProjectionType = RenderSystem.getProjectionType();
-
-        RenderSystem.getModelViewStack().pushMatrix();
-        RenderSystem.getModelViewStack().set(identityMatrix);
-
-        RenderSystem.setProjectionMatrix(identityMatrix, ProjectionType.ORTHOGRAPHIC);
-        RenderSystem.setShader(shader);
-
-        Tesselator tessellator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tessellator.
-            begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
-
-        bufferBuilder.addVertex(1, -1, 0).setColor(r, g, b, a);
-        bufferBuilder.addVertex(1, 1, 0).setColor(r, g, b, a);
-        bufferBuilder.addVertex(-1, 1, 0).setColor(r, g, b, a);
-
-        bufferBuilder.addVertex(-1, 1, 0).setColor(r, g, b, a);
-        bufferBuilder.addVertex(-1, -1, 0).setColor(r, g, b, a);
-        bufferBuilder.addVertex(1, -1, 0).setColor(r, g, b, a);
-
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
-
-        RenderSystem.getModelViewStack().popMatrix();
-        RenderSystem.setProjectionMatrix(previousProjection, previousProjectionType);
-
-        Objects.requireNonNull(RenderSystem.getShader()).clear();
-        RenderSystem.clearShader();
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        bufferBuilder.addVertex(-1.0f, 1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(-1.0f, -1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(1.0f, -1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(1.0f, 0.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(0.0f, 1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(-1.0f, 0.0f, 0.0f).setColor(r, g, b, a);
+        MeshData meshData = bufferBuilder.build();
+        if (meshData != null) {
+            MyRenderHelper.drawMesh(PORTAL_AREA_PIPELINE, meshData, renderPass -> {
+                renderPass.setUniform("IP_ModelViewMat", identityMatrix);
+                renderPass.setUniform("IP_ProjMat", identityMatrix);
+            });
+        }
     }
 
-    /**
-     * {@link RenderTarget#blitToScreen(int, int)}
-     */
-    public static void drawScreenFrameBuffer(
-        RenderTarget textureProvider,
-        boolean doUseAlphaBlend,
-        boolean doEnableModifyAlpha
-    ) {
+    @IPVanillaCopy
+    public static void renderScreenTriangle(int r, int g, int b, int a) {
+        MyRenderHelper.renderScreenTriangle(r, g, b, a, PORTAL_AREA_PIPELINE);
+    }
+
+    private static void renderScreenTriangle(int r, int g, int b, int a, RenderPipeline pipeline) {
+        Matrix4f identityMatrix = new Matrix4f();
+        identityMatrix.identity();
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tessellator.begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+        bufferBuilder.addVertex(1.0f, -1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(1.0f, 1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(-1.0f, 1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(-1.0f, 1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(-1.0f, -1.0f, 0.0f).setColor(r, g, b, a);
+        bufferBuilder.addVertex(1.0f, -1.0f, 0.0f).setColor(r, g, b, a);
+        MeshData meshData = bufferBuilder.build();
+        if (meshData != null) {
+            MyRenderHelper.drawMesh(pipeline, meshData, renderPass -> {
+                renderPass.setUniform("IP_ModelViewMat", identityMatrix);
+                renderPass.setUniform("IP_ProjMat", identityMatrix);
+            });
+        }
+    }
+
+    public static void drawScreenFrameBuffer(RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha) {
         int x = 0;
         int y = 0;
-
         int viewportWidth = textureProvider.viewWidth;
         int viewportHeight = textureProvider.viewHeight;
-
-        drawFramebufferWithCoordinatesAndDimensions(
-            textureProvider, doUseAlphaBlend, doEnableModifyAlpha,
-            x, y, viewportWidth, viewportHeight
-        );
+        MyRenderHelper.drawFramebufferWithCoordinatesAndDimensions(textureProvider, doUseAlphaBlend, doEnableModifyAlpha, x, y, viewportWidth, viewportHeight);
     }
 
-    public static void drawFramebuffer(
-            RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha,
-            float xMin, float xMax, float yMin, float yMax
-    ) {
-        drawFramebufferWithCoordinatesAndDimensions(
-                textureProvider,
-                doUseAlphaBlend, doEnableModifyAlpha,
-                0, 0,
-                client.getWindow().getWidth(),
-                client.getWindow().getHeight()
-        );
+    public static void drawFramebuffer(RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha, float xMin, float xMax, float yMin, float yMax) {
+        MyRenderHelper.drawFramebufferWithCoordinatesAndDimensions(textureProvider, doUseAlphaBlend, doEnableModifyAlpha, 0, 0, client.getWindow().getWidth(), client.getWindow().getHeight());
     }
 
-    public static void drawFramebufferWithViewport(
-            RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha,
-            float left, float right, float bottom, float up,
-            int viewportWidth, int viewportHeight
-    ) {
-        drawFramebufferWithCoordinatesAndDimensions(
-                textureProvider,
-                doUseAlphaBlend, doEnableModifyAlpha,
-                0, 0,
-                viewportWidth, viewportHeight
-        );
+    public static void drawFramebufferWithViewport(RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha, float left, float right, float bottom, float up, int viewportWidth, int viewportHeight) {
+        MyRenderHelper.drawFramebufferWithCoordinatesAndDimensions(textureProvider, doUseAlphaBlend, doEnableModifyAlpha, 0, 0, viewportWidth, viewportHeight);
     }
 
-    public static void drawFramebufferWithBounds(
-        RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha,
-        int xMin, int xMax, int yMin, int yMax
-    ) {
-
-        drawFramebufferWithCoordinatesAndDimensions(
-            textureProvider,
-            doUseAlphaBlend, doEnableModifyAlpha,
-            xMin, yMin,
-            Mth.abs(xMax - xMin),
-            Mth.abs(yMax - yMin)
-        );
+    public static void drawFramebufferWithBounds(RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha, int xMin, int xMax, int yMin, int yMax) {
+        MyRenderHelper.drawFramebufferWithCoordinatesAndDimensions(textureProvider, doUseAlphaBlend, doEnableModifyAlpha, xMin, yMin, Mth.abs((int)(xMax - xMin)), Mth.abs((int)(yMax - yMin)));
     }
 
-    /**
-     * {@link RenderTarget#blitToScreen(int, int)}
-     */
-    @SuppressWarnings("resource")
     @IPVanillaCopy
-    public static void drawFramebufferWithCoordinatesAndDimensions(
-        RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha,
-        int x, int y, int viewportWidth, int viewportHeight
-    ) {
+    public static void drawFramebufferWithCoordinatesAndDimensions(RenderTarget textureProvider, boolean doUseAlphaBlend, boolean doEnableModifyAlpha, int x, int y, int viewportWidth, int viewportHeight) {
         CHelper.checkGlError();
-
-        RenderSystem.disableDepthTest();
-        RenderSystem.depthMask(false);
-        RenderSystem.viewport(x, textureProvider.viewHeight - viewportHeight - y, viewportWidth, viewportHeight);
-
+        GlStateManager._disableDepthTest();
+        GlStateManager._depthMask((boolean)false);
+        GlStateManager._viewport((int)x, (int)(textureProvider.viewHeight - viewportHeight - y), (int)viewportWidth, (int)viewportHeight);
         if (doUseAlphaBlend) {
-            RenderSystem.enableBlend();
-
-            // this is used for rendering a FB onto screen when the FB contains translucent things
-            // the FB should initialize with zero color and zero alpha
-            // MC's default blend func is: color = srcColor * srcAlpha + dstColor * (1-srcAlpha)
-            // then the FB's rendered content would be fbColor = contentColor * contentAlpha
-            // we want the roughtly same effect of rendering the translucent thing directly onto current FB, so we want:
-            // color = contentColor * contentAlpha + dstColor * (1-contentAlpha)
-            // color = fbColor * 1 + dstColor * (1-contentAlpha)
-            RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.ONE,
-                GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
-                GlStateManager.SourceFactor.ZERO,
-                GlStateManager.DestFactor.ONE
-            );
+            GlStateManager._enableBlend();
+            GlStateManager._blendFuncSeparate((int)1, (int)771, (int)0, (int)1);
+        } else {
+            GlStateManager._disableBlend();
         }
-        else {
-            RenderSystem.disableBlend();
-        }
-
         if (doEnableModifyAlpha) {
-            RenderSystem.colorMask(true, true, true, true);
+            GlStateManager._colorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
+        } else {
+            GlStateManager._colorMask((boolean)true, (boolean)true, (boolean)true, (boolean)false);
         }
-        else {
-            RenderSystem.colorMask(true, true, true, false);
-        }
-
-        ShaderProgram shader = doUseAlphaBlend ?
-            CoreShaders.BLIT_SCREEN : BLIT_SCREEN_NOBLEND;
-
-        Validate.notNull(shader, "shader is null");
-
-        RenderSystem.setShader(shader);
-        CompiledShaderProgram compiledShaderProgram = RenderSystem.getShader();
-        Validate.notNull(compiledShaderProgram, "compiledShaderProgram is null");
-
-        compiledShaderProgram.bindSampler("DiffuseSampler", textureProvider.getColorTextureId());
-
-        BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
+        BufferBuilder bufferBuilder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
         bufferBuilder.addVertex(0.0f, 0.0f, 0.0f);
         bufferBuilder.addVertex(1.0f, 0.0f, 0.0f);
         bufferBuilder.addVertex(1.0f, 1.0f, 0.0f);
         bufferBuilder.addVertex(0.0f, 1.0f, 0.0f);
-        BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
-
-        compiledShaderProgram.clear();
-
-        RenderSystem.clearShader();
-
-        RenderSystem.depthMask(true);
-        RenderSystem.colorMask(true, true, true, true);
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
+        MyRenderHelper.drawMesh(doUseAlphaBlend ? RenderPipelines.GUI_TEXTURED : BLIT_SCREEN_NOBLEND_PIPELINE, bufferBuilder.buildOrThrow(), renderPass -> renderPass.bindSampler("DiffuseSampler", textureProvider.getColorTexture()));
+        GlStateManager._depthMask((boolean)true);
+        GlStateManager._colorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
+        GlStateManager._enableBlend();
+        GlStateManager._blendFuncSeparate((int)770, (int)771, (int)1, (int)0);
         CHelper.checkGlError();
     }
 
-    // it will remove the light sections that are marked to be removed
-    // if not, light data will cause minor memory leak
-    // and wrongly remove the light data when the chunks get reloaded to client
-    // this should not run before world rendering or the smooth lighting may become abnormal in section edge
     public static void lateUpdateLight() {
         if (!ClientWorldLoader.getIsInitialized()) {
             return;
         }
-
         ClientWorldLoader.getClientWorlds().forEach(world -> {
-            if (!RenderStates.isDimensionRendered(world.dimension())) {
+            if (!RenderStates.isDimensionRendered((ResourceKey<Level>)world.dimension())) {
                 world.getChunkSource().getLightEngine().runLightUpdates();
             }
         });
     }
 
-    /**
-     * If we don't do this
-     * the future created in {@link SectionRenderDispatcher#uploadSectionLayer}
-     * may never complete
-     */
     public static void earlyRemoteUpload() {
         if (!ClientWorldLoader.getIsInitialized()) {
             return;
         }
-
         ClientWorldLoader.WORLD_RENDERER_MAP.forEach((dim, worldRenderer) -> {
-            Validate.notNull(client.level, "client.level is null");
-            if (client.level.dimension() != dim) {
+            if (MyRenderHelper.client.level.dimension() != dim) {
                 worldRenderer.getSectionRenderDispatcher().uploadAllPendingUploads();
             }
         });
     }
 
     public static void applyMirrorFaceCulling() {
-        glCullFace(GL_FRONT);
+        GL11.glCullFace((int)1028);
     }
 
     public static void recoverFaceCulling() {
-        glCullFace(GL_BACK);
+        GL11.glCullFace((int)1029);
     }
 
     public static void clearAlphaTo1(RenderTarget mcFrameBuffer) {
-        mcFrameBuffer.bindWrite(true);
-        RenderSystem.colorMask(false, false, false, true);
-        RenderSystem.clearColor(0, 0, 0, 1.0f);
-        RenderSystem.clear(GL_COLOR_BUFFER_BIT);
-        RenderSystem.colorMask(true, true, true, true);
+        RenderSystem.getDevice().createCommandEncoder().clearColorTexture(mcFrameBuffer.getColorTexture(), -16777216);
     }
 
     public static void restoreViewPort() {
         Minecraft client = Minecraft.getInstance();
-        GlStateManager._viewport(
-            0,
-            0,
-            client.getWindow().getWidth(),
-            client.getWindow().getHeight()
-        );
+        RenderTarget target = client.getMainRenderTarget();
+        GlStateManager._viewport((int)0, (int)0, (int)target.viewWidth, (int)target.viewHeight);
     }
 
     public static float transformFogDistance(float value) {
+        Portal renderingPortal;
         if (!WorldRenderInfo.isFogEnabled()) {
-            return value * 23333;
+            return value * 23333.0f;
         }
-
-        // just disable fog for fuse-view portals for now
-        if (PortalRendering.isRendering()) {
-            Portal renderingPortal = PortalRendering.getRenderingPortal();
-
-            if (renderingPortal.isFuseView()) {
-                return value * 23333;
-            }
+        if (PortalRendering.isRendering() && (renderingPortal = PortalRendering.getRenderingPortal()).isFuseView()) {
+            return value * 23333.0f;
         }
-
-        // as non-fuse-view portals does not apply scale transformation to modelview,
-        // there is no need to transform fog distance (both with and without sodium)
-
         return value;
     }
 
-    private static boolean debugEnabled = false;
-
-    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public static void debugFramebufferDepth() {
         if (!debugEnabled) {
             return;
         }
         debugEnabled = false;
-
-        int width = client.getMainRenderTarget().width;
-        int height = client.getMainRenderTarget().height;
-
-
+        int width = MyRenderHelper.client.getMainRenderTarget().width;
+        int height = MyRenderHelper.client.getMainRenderTarget().height;
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN);
-
         FloatBuffer floatBuffer = directBuffer.asFloatBuffer();
-
-        glReadPixels(
-            0, 0, width, height,
-            GL_DEPTH_COMPONENT, GL_FLOAT, floatBuffer
-        );
-
+        GL11.glReadPixels((int)0, (int)0, (int)width, (int)height, (int)6402, (int)5126, (FloatBuffer)floatBuffer);
         float[] data = new float[width * height];
-
         floatBuffer.rewind();
         floatBuffer.get(data);
-
-        float maxValue = (float) IntStream.range(0, data.length)
-            .mapToDouble(i -> data[i]).max().getAsDouble();
-        float minValue = (float) IntStream.range(0, data.length)
-            .mapToDouble(i -> data[i]).min().getAsDouble();
-
+        float maxValue = (float)IntStream.range(0, data.length).mapToDouble(i -> data[i]).max().getAsDouble();
+        float minValue = (float)IntStream.range(0, data.length).mapToDouble(i -> data[i]).min().getAsDouble();
         byte[] grayData = new byte[width * height];
-        for (int i = 0; i < data.length; i++) {
-            float datum = data[i];
-
+        for (int i2 = 0; i2 < data.length; ++i2) {
+            float datum = data[i2];
             datum = (datum - minValue) / (maxValue - minValue);
-
-            grayData[i] = (byte) (datum * 255);
+            grayData[i2] = (byte)(datum * 255.0f);
         }
-
-        BufferedImage bufferedImage =
-            new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-
-        bufferedImage.setData(
-            Raster.createRaster(
-                bufferedImage.getSampleModel(),
-                new DataBufferByte(grayData, grayData.length), new Point()
-            )
-        );
-
+        BufferedImage bufferedImage = new BufferedImage(width, height, 10);
+        bufferedImage.setData(Raster.createRaster(bufferedImage.getSampleModel(), new DataBufferByte(grayData, grayData.length), new Point()));
         System.out.println("oops");
     }
 
@@ -577,49 +308,24 @@ public class MyRenderHelper {
             return;
         }
         debugEnabled = false;
-
-        int width = client.getMainRenderTarget().width;
-        int height = client.getMainRenderTarget().height;
-
-
+        int width = MyRenderHelper.client.getMainRenderTarget().width;
+        int height = MyRenderHelper.client.getMainRenderTarget().height;
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.LITTLE_ENDIAN);
-
         FloatBuffer floatBuffer = directBuffer.asFloatBuffer();
-
-        glReadPixels(
-            0, 0, width, height,
-            GL_RED, GL_FLOAT, floatBuffer
-        );
-
+        GL11.glReadPixels((int)0, (int)0, (int)width, (int)height, (int)6403, (int)5126, (FloatBuffer)floatBuffer);
         float[] data = new float[width * height];
-
         floatBuffer.rewind();
         floatBuffer.get(data);
-
-        float maxValue = (float) IntStream.range(0, data.length)
-            .mapToDouble(i -> data[i]).max().getAsDouble();
-        float minValue = (float) IntStream.range(0, data.length)
-            .mapToDouble(i -> data[i]).min().getAsDouble();
-
+        float maxValue = (float)IntStream.range(0, data.length).mapToDouble(i -> data[i]).max().getAsDouble();
+        float minValue = (float)IntStream.range(0, data.length).mapToDouble(i -> data[i]).min().getAsDouble();
         byte[] grayData = new byte[width * height];
-        for (int i = 0; i < data.length; i++) {
-            float datum = data[i];
-
+        for (int i2 = 0; i2 < data.length; ++i2) {
+            float datum = data[i2];
             datum = (datum - minValue) / (maxValue - minValue);
-
-            grayData[i] = (byte) (datum * 255);
+            grayData[i2] = (byte)(datum * 255.0f);
         }
-
-        BufferedImage bufferedImage =
-            new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
-
-        bufferedImage.setData(
-            Raster.createRaster(
-                bufferedImage.getSampleModel(),
-                new DataBufferByte(grayData, grayData.length), new Point()
-            )
-        );
-
+        BufferedImage bufferedImage = new BufferedImage(width, height, 10);
+        bufferedImage.setData(Raster.createRaster(bufferedImage.getSampleModel(), new DataBufferByte(grayData, grayData.length), new Point()));
         System.out.println("oops");
     }
 }

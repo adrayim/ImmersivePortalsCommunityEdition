@@ -59,8 +59,20 @@ public abstract class PortalRenderer {
         );
     
     public static final Minecraft client = Minecraft.getInstance();
+
+    private static Matrix4f currentProjectionMatrix;
+
+    public static void setCurrentProjectionMatrix(Matrix4f projectionMatrix) {
+        currentProjectionMatrix = projectionMatrix;
+    }
+
+    public static Matrix4f getCurrentProjectionMatrix() {
+        return currentProjectionMatrix != null ? currentProjectionMatrix : RenderSystem.getProjectionMatrix();
+    }
     
     public abstract void onBeforeTranslucentRendering(Matrix4f modelView);
+
+    public void onAfterTranslucentRendering(Matrix4f modelView) {}
     
     // will be called when rendering portal
     public abstract void onHandRenderingEnded();
@@ -207,6 +219,7 @@ public abstract class PortalRenderer {
         
         int renderDistance = getPortalRenderDistance(portal);
         
+        Matrix4f outerProjection = getCurrentProjectionMatrix();
         invokeWorldRendering(
             new WorldRenderInfo.Builder()
                 .setWorld(newWorld)
@@ -220,6 +233,7 @@ public abstract class PortalRenderer {
                 .setDoRenderSky(!portal.isFuseView())
                 .build()
         );
+        setCurrentProjectionMatrix(outerProjection);
         
         PortalRendering.onEndPortalWorldRendering();
         
@@ -340,7 +354,7 @@ public abstract class PortalRenderer {
         }
         
         switch (IPGlobal.renderMode) {
-            case normal -> switchRenderer(IPCGlobal.rendererUsingStencil);
+            case normal -> switchRenderer(IPCGlobal.rendererUsingFrameBuffer);
             case compatibility -> switchRenderer(IPCGlobal.rendererUsingFrameBuffer);
             case debug -> switchRenderer(IPCGlobal.rendererDebug);
             case none -> switchRenderer(IPCGlobal.rendererDummy);

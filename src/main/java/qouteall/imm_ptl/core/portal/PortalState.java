@@ -101,8 +101,8 @@ public class PortalState {
     }
     
     public static PortalState fromTag(CompoundTag tag) {
-        ResourceKey<Level> fromWorld = Helper.dimIdToKey(tag.getString("fromWorld"));
-        ResourceKey<Level> toWorld = Helper.dimIdToKey(tag.getString("toWorld"));
+        ResourceKey<Level> fromWorld = Helper.dimIdToKey(tag.getStringOr("fromWorld", ""));
+        ResourceKey<Level> toWorld = Helper.dimIdToKey(tag.getStringOr("toWorld", ""));
         Vec3 fromPos = Helper.getVec3d(tag, "fromPos");
         Vec3 toPos = Helper.getVec3d(tag, "toPos");
         double scaling = tag.getDoubleOr("scaling", 0.0D);

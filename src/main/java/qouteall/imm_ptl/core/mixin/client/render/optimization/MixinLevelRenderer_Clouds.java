@@ -1,7 +1,6 @@
 package qouteall.imm_ptl.core.mixin.client.render.optimization;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexBuffer;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.util.Mth;

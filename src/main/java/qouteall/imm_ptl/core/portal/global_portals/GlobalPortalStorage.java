@@ -24,6 +24,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.util.datafix.DataFixTypes;
 import org.apache.commons.lang3.Validate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -95,19 +97,19 @@ public class GlobalPortalStorage extends SavedData {
         ServerLevel world
     ) {
         return world.getDataStorage().computeIfAbsent(
-            new SavedData.Factory<>(
-                () -> {
+            new SavedDataType<>(
+                "global_portal",
+                context -> {
                     LOGGER.info("Global portal storage initialized {}", world.dimension().location());
                     return new GlobalPortalStorage(world);
                 },
-                (nbt, holderLookup) -> {
+                context -> CompoundTag.CODEC.xmap(nbt -> {
                     GlobalPortalStorage globalPortalStorage = new GlobalPortalStorage(world);
                     globalPortalStorage.fromNbt(nbt);
                     return globalPortalStorage;
-                },
-                null
-            ),
-            "global_portal"
+                }, storage -> storage.save(new CompoundTag(), world.registryAccess())),
+                DataFixTypes.LEVEL
+            )
         );
     }
     
@@ -229,12 +231,12 @@ public class GlobalPortalStorage extends SavedData {
         Level currWorld
     ) {
         /**{@link CompoundTag#getType()}*/
-        ListTag listTag = tag.getList("data", 10);
+        ListTag listTag = tag.getListOrEmpty("data");
         
         List<Portal> newData = new ArrayList<>();
         
         for (int i = 0; i < listTag.size(); i++) {
-            CompoundTag compoundTag = listTag.getCompound(i);
+            CompoundTag compoundTag = listTag.getCompoundOrEmpty(i);
             Portal e = readPortalFromTag(currWorld, compoundTag);
             if (e != null) {
                 newData.add(e);
@@ -262,7 +264,6 @@ public class GlobalPortalStorage extends SavedData {
         return (Portal) e;
     }
     
-    @Override
     public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         if (data == null) {
             return tag;

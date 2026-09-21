@@ -16,7 +16,6 @@ import net.minecraft.server.level.FullChunkStatus;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.Ticket;
 import net.minecraft.server.level.TicketType;
-import net.minecraft.util.SortedArraySet;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;
 import org.apache.commons.lang3.Validate;
@@ -59,8 +58,8 @@ import java.util.concurrent.Executor;
 public class ImmPtlChunkTickets {
     private static final Logger LOGGER = LogUtils.getLogger();
     
-    public static final TicketType<ChunkPos> TICKET_TYPE =
-        TicketType.create("imm_ptl", Comparator.comparingLong(ChunkPos::toLong));
+    public static final TicketType TICKET_TYPE =
+        new TicketType(Long.MAX_VALUE, false, TicketType.TicketUse.LOADING_AND_SIMULATION);
     
     // for debugging
     @SuppressWarnings("FieldMayBeFinal")
@@ -183,7 +182,6 @@ public class ImmPtlChunkTickets {
             return;
         }
         
-        DistanceManager distanceManager = getDistanceManager(world);
         // clear the already loaded chunks
         waitingForLoading.removeIf((long chunkPos) -> {
             ChunkHolder chunkHolder = getChunkHolder(world, chunkPos);
@@ -235,7 +233,7 @@ public class ImmPtlChunkTickets {
                     
                     long chunkPos = queue.removeFirstLong();
                     if (chunkPosToTicketInfo.containsKey(chunkPos)) {
-                        addTicket(distanceManager, chunkPos);
+                        addTicket(world, chunkPos);
                         
                         waitingForLoading.add(chunkPos);
                     }
@@ -247,15 +245,13 @@ public class ImmPtlChunkTickets {
         }
     }
     
-    private static void addTicket(DistanceManager distanceManager, long chunkPos) {
+    private static void addTicket(ServerLevel world, long chunkPos) {
         if (!IPConfig.getConfig().enableImmPtlChunkLoading) {
             return;
         }
         
         ChunkPos chunkPosObj = new ChunkPos(chunkPos);
-        distanceManager.addRegionTicket(
-            TICKET_TYPE, chunkPosObj, getLoadingRadius(), chunkPosObj
-        );
+        world.getChunkSource().addTicketWithRadius(TICKET_TYPE, chunkPosObj, getLoadingRadius());
         
         if (enableDebugRateStat) {
             debugRateStat.hit();
@@ -266,8 +262,6 @@ public class ImmPtlChunkTickets {
         ServerLevel world,
         LongPredicate shouldKeepLoadingFunc
     ) {
-        DistanceManager distanceManager = getDistanceManager(world);
-        
         chunkPosToTicketInfo.long2ObjectEntrySet().removeIf(e -> {
             long chunkPos = e.getLongKey();
             ChunkTicketInfo ticketInfo = e.getValue();
@@ -282,8 +276,8 @@ public class ImmPtlChunkTickets {
                 
                 if (!pendingTicketAdding) {
                     ChunkPos chunkPosObj = new ChunkPos(chunkPos);
-                    distanceManager.removeRegionTicket(
-                        TICKET_TYPE, chunkPosObj, getLoadingRadius(), chunkPosObj
+                    world.getChunkSource().removeTicketWithRadius(
+                        TICKET_TYPE, chunkPosObj, getLoadingRadius()
                     );
                 }
                 return true;
@@ -309,20 +303,11 @@ public class ImmPtlChunkTickets {
     }
     
     private static void removeAllTicketsInWorld(ServerLevel world, ImmPtlChunkTickets dimTicketManager) {
-        DistanceManager ticketManager = getDistanceManager(world);
-        
         dimTicketManager.chunkPosToTicketInfo.keySet().forEach((long pos) -> {
-            SortedArraySet<Ticket<?>> tickets = ((IEDistanceManager) getDistanceManager(world))
-                .portal_getTicketSet(pos);
-            
-            // avoid removing ticket when iterating the ticket set
-            List<Ticket<?>> toRemove = tickets.stream()
-                .filter(t -> t.getType() == TICKET_TYPE).toList();
-            
             ChunkPos chunkPos = new ChunkPos(pos);
-            for (Ticket<?> ticket : toRemove) {
-                ticketManager.removeRegionTicket(TICKET_TYPE, chunkPos, ticket.getTicketLevel(), chunkPos);
-            }
+            world.getChunkSource().removeTicketWithRadius(
+                TICKET_TYPE, chunkPos, getLoadingRadius()
+            );
         });
         
         dimTicketManager.isValid = false;

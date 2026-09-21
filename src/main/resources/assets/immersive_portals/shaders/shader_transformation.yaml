@@ -1,9 +1,14 @@
 ---
 configs:
-  - comment: For Minecraft 1.21.2 shared terrain vertex shader
+  - comment: For vanilla terrain rendering
     type: vs
     affectedShaders:
       - terrain
+      - rendertype_solid
+      - rendertype_cutout
+      - rendertype_cutout_mipped
+      - rendertype_translucent
+      - rendertype_tripwire
     transformations:
       - pattern: |-
           void ( )*main( )*\(( )*( )*\)( )*(
@@ -14,39 +19,31 @@ configs:
               gl_ClipDistance[0] = dot(Position.xyz + ModelOffset, iportal_ClippingEquation.xyz) +
                   iportal_ClippingEquation.w;
     debugOutput: false
-  - comment: For vanilla terrain rendering
-    type: vs
-    affectedShaders:
-      - rendertype_solid
-      - rendertype_cutout
-      - rendertype_cutout_mipped
-      - rendertype_translucent
-    transformations:
-      - pattern: |-
-          void ( )*main( )*\(( )*( )*\)( )*(
-          )*\{
-        replacement: |-
-          uniform vec4 iportal_ClippingEquation;
-          void main() {
-              gl_ClipDistance[0] = dot(Position.xyz + ChunkOffset, iportal_ClippingEquation.xyz) +
-                  iportal_ClippingEquation.w;
-    debugOutput: false
-  - comment: For portal area rendering and entity rendering and particle
+  - comment: For entity rendering and particle
     type: vs
     affectedShaders:
       - entity
+      - rendertype_armor_cutout_no_cull
+      - rendertype_armor_translucent
+      - rendertype_breeze_wind
+      - rendertype_crumbling
+      - rendertype_energy_swirl
+      - rendertype_entity_alpha
       - rendertype_entity_solid
       - rendertype_entity_cutout
       - rendertype_entity_cutout_no_cull
       - rendertype_entity_cutout_no_cull_z_offset
+      - rendertype_entity_decal
+      - rendertype_entity_no_outline
+      - rendertype_entity_shadow
       - rendertype_item_entity_translucent_cull
       - rendertype_entity_translucent_cull
       - rendertype_entity_translucent
       - rendertype_entity_smooth_cutout
-      - rendertype_beacon_beam",
+      - rendertype_beacon_beam
       - rendertype_entity_translucent_emissive
       - rendertype_entity_translucent_cull
-      - portal_area
+      - rendertype_leash
       - particle
     transformations:
       - pattern: |-
@@ -55,7 +52,23 @@ configs:
         replacement: |-
           uniform vec4 iportal_ClippingEquation;
           void main() {
-              gl_ClipDistance[0] = dot(Position.xyz, iportal_ClippingEquation.xyz) + 
+              gl_ClipDistance[0] = dot(
+                  (ModelViewMat * vec4(Position, 1.0)).xyz,
+                  iportal_ClippingEquation.xyz
+              ) + iportal_ClippingEquation.w;
+    debugOutput: false
+  - comment: For portal area rendering
+    type: vs
+    affectedShaders:
+      - portal_area
+    transformations:
+      - pattern: |-
+          void ( )*main( )*\(( )*( )*\)( )*(
+          )*\{
+        replacement: |-
+          uniform vec4 iportal_ClippingEquation;
+          void main() {
+              gl_ClipDistance[0] = dot(Position.xyz, iportal_ClippingEquation.xyz) +
                   iportal_ClippingEquation.w;
     debugOutput: false
   - comment: For iris+sodium
@@ -90,10 +103,10 @@ configs:
           uniform vec4 iportal_ClippingEquation;
           void main() {
       - pattern: "\\}(?![\\S\\s]*\\})"
-        # match the last } ([\S\s] matches any character). use the modelview-transformed coordinate
+        # match the last } ([\S\s] matches any character). Sodium's position is already camera-relative.
         replacement: |-
           gl_ClipDistance[0] = dot(
-              (u_ModelViewMatrix * vec4(position, 1.0)).xyz, iportal_ClippingEquation.xyz
+              position, iportal_ClippingEquation.xyz
           ) + iportal_ClippingEquation.w;
           }
     debugOutput: false

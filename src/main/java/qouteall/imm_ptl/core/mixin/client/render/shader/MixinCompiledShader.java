@@ -2,7 +2,8 @@ package qouteall.imm_ptl.core.mixin.client.render.shader;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.preprocessor.GlslPreprocessor;
-import com.mojang.blaze3d.shaders.CompiledShader;
+import com.mojang.blaze3d.opengl.GlShaderModule;
+import com.mojang.blaze3d.shaders.ShaderType;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
@@ -19,7 +20,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
-@Mixin(value = CompiledShader.class)
+@Mixin(value = GlShaderModule.class)
 public class MixinCompiledShader {
 
     @ModifyVariable(
@@ -30,7 +31,7 @@ public class MixinCompiledShader {
     private static String onCompile(
         String code,
         @Local(argsOnly = true) ResourceLocation resourceLocation,
-        @Local(argsOnly = true) CompiledShader.Type type
+        @Local(argsOnly = true) ShaderType type
     ) {
         return ShaderCodeTransformation.transform(type, resourceLocation.toString(), code);
     }

@@ -60,8 +60,8 @@ public class RendererDebug extends PortalRenderer {
     
         PortalRendering.pushPortalLayer(portal);
         
-        GlStateManager._clearColor(1, 0, 1, 1);
-        GlStateManager._clearDepth(1);
+        GL11.glClearColor(1, 0, 1, 1);
+        GL11.glClearDepth(1);
         GlStateManager._clear(
             GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT
         );

@@ -1,322 +1,230 @@
 package qouteall.imm_ptl.core.render.renderer;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import java.util.List;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.FogRenderer;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 import qouteall.imm_ptl.core.CHelper;
 import qouteall.imm_ptl.core.compat.IPPortingLibCompat;
+import qouteall.imm_ptl.core.compat.iris_compatibility.IrisInterface;
 import qouteall.imm_ptl.core.portal.Portal;
 import qouteall.imm_ptl.core.portal.PortalRenderInfo;
 import qouteall.imm_ptl.core.render.FrontClipping;
 import qouteall.imm_ptl.core.render.MyRenderHelper;
 import qouteall.imm_ptl.core.render.ViewAreaRenderer;
-import qouteall.imm_ptl.core.render.context_management.RenderStates;
+import qouteall.imm_ptl.core.render.context_management.FogRendererContext;
 import qouteall.imm_ptl.core.render.context_management.PortalRendering;
+import qouteall.imm_ptl.core.render.context_management.RenderStates;
 import qouteall.imm_ptl.core.render.context_management.WorldRenderInfo;
+import qouteall.imm_ptl.core.render.renderer.PortalRenderer;
+import qouteall.q_misc_util.Helper;
 
-import java.util.List;
+public class RendererUsingStencil
+extends PortalRenderer {
+    private int lastPortalRenderFrame = -1;
+    private int lastRenderedPortalCount = -1;
+    private boolean loggedPortalRenderAttempt = false;
 
-import static org.lwjgl.opengl.GL11.GL_ALWAYS;
-import static org.lwjgl.opengl.GL11.GL_DEPTH_FUNC;
-import static org.lwjgl.opengl.GL11.GL_EQUAL;
-import static org.lwjgl.opengl.GL11.GL_INCR;
-import static org.lwjgl.opengl.GL11.GL_KEEP;
-import static org.lwjgl.opengl.GL11.GL_LESS;
-import static org.lwjgl.opengl.GL11.GL_REPLACE;
-import static org.lwjgl.opengl.GL11.GL_STENCIL_TEST;
-
-public class RendererUsingStencil extends PortalRenderer {
-    
-    
     @Override
     public boolean replaceFrameBufferClearing() {
         boolean skipClearing = WorldRenderInfo.isRendering();
-        if (skipClearing) {
-            if (WorldRenderInfo.getTopRenderInfo().doRenderSky) {
-                float partialTick = RenderStates.getPartialTick();
-                var fogColor = FogRenderer.computeFogColor(
-                    client.gameRenderer.getMainCamera(), partialTick, client.level,
-                    client.options.getEffectiveRenderDistance(),
-                    client.gameRenderer.getDarkenWorldAmount(partialTick)
-                );
-                RenderSystem.depthMask(false);
-                MyRenderHelper.renderScreenTriangle(new Vec3(
-                    fogColor.x, fogColor.y, fogColor.z
-                ));
-                RenderSystem.depthMask(true);
-            }
+        if (skipClearing && WorldRenderInfo.getTopRenderInfo().doRenderSky) {
+            GlStateManager._depthMask((boolean)false);
+            MyRenderHelper.renderScreenTriangle(FogRendererContext.getCurrentFogColor.get());
+            GlStateManager._depthMask((boolean)true);
         }
         return skipClearing;
     }
-    
+
     @Override
     public void onBeforeTranslucentRendering(Matrix4f modelView) {
-        doPortalRendering(modelView);
+        this.doPortalRenderingOnceThisFrame(modelView, false);
     }
-    
+
+    @Override
+    public void onBeforeHandRendering(Matrix4f modelView) {
+        this.doPortalRenderingOnceThisFrame(modelView, true);
+    }
+
+    private void doPortalRenderingOnceThisFrame(Matrix4f modelView, boolean isFallback) {
+        if (this.lastPortalRenderFrame == RenderStates.frameIndex) {
+            if (!isFallback) {
+                return;
+            }
+            if (this.lastRenderedPortalCount > 0) {
+                if (!IrisInterface.invoker.isShaders()) {
+                    return;
+                }
+                this.prepareRendering();
+            } else {
+                GL11.glEnable((int)2960);
+            }
+        }
+        this.lastPortalRenderFrame = RenderStates.frameIndex;
+        int before = RenderStates.getRenderedPortalNum();
+        this.doPortalRendering(modelView);
+        this.lastRenderedPortalCount = RenderStates.getRenderedPortalNum() - before;
+    }
+
     protected void doPortalRendering(Matrix4f modelView) {
-        // NOTE do not use glDisable(GL_DEPTH_TEST),
-        // use GlStateManager.disableDepthTest() instead
-        // because GlStateManager will cache its state.
-        // Do not make its cache not synchronized
-        RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(true);
-        
+        GlStateManager._enableDepthTest();
+        GlStateManager._depthMask((boolean)true);
         Profiler.get().popPush("render_portal_total");
-        renderPortals(modelView);
+        this.renderPortals(modelView);
         if (PortalRendering.isRendering()) {
-            setStencilStateForWorldRendering();
-        }
-        else {
-            // don't do it in finishRendering()
-            // as it will render outer world's transparent things later
-            myFinishRendering();
+            this.setStencilStateForWorldRendering();
+        } else {
+            this.myFinishRendering();
         }
     }
-    
+
     protected void renderPortals(Matrix4f modelView) {
-        List<Portal> portalsToRender = getPortalsToRender(modelView);
-        
+        List<Portal> portalsToRender = this.getPortalsToRender(modelView);
+        if (!this.loggedPortalRenderAttempt && !portalsToRender.isEmpty()) {
+            this.loggedPortalRenderAttempt = true;
+            Helper.log("Stencil renderer found " + portalsToRender.size() + " portal(s) to render");
+        }
         for (Portal portal : portalsToRender) {
-            doRenderPortal(portal, modelView);
+            this.doRenderPortal(portal, modelView);
         }
     }
-    
+
+    @Override
+    public void onAfterTranslucentRendering(Matrix4f modelView) {
+    }
+
     @Override
     public void onHandRenderingEnded() {
-        //nothing
     }
-    
+
     @Override
     public void prepareRendering() {
         if (!IPPortingLibCompat.getIsStencilEnabled(client.getMainRenderTarget())) {
             IPPortingLibCompat.setIsStencilEnabled(client.getMainRenderTarget(), true);
-            
             if (Minecraft.useShaderTransparency()) {
-//                client.worldRenderer.reload();
+                // empty if block
             }
         }
-        
-        client.getMainRenderTarget().bindWrite(false);
-        
-        GL11.glClearStencil(0);
-        GL11.glClear(GL11.GL_STENCIL_BUFFER_BIT);
-        
+        GL11.glClearStencil((int)0);
+        GL11.glClear((int)1024);
         GlStateManager._enableDepthTest();
-        GL11.glEnable(GL_STENCIL_TEST);
-        
+        GL11.glEnable((int)2960);
     }
-    
+
     @Override
     public void finishRendering() {
-        //nothing
     }
-    
+
     private void myFinishRendering() {
-        GL11.glStencilFunc(GL_ALWAYS, 2333, 0xFF);
-        GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        
-        GL11.glDisable(GL_STENCIL_TEST);
+        GL11.glStencilFunc((int)519, (int)2333, (int)255);
+        GL11.glStencilOp((int)7680, (int)7680, (int)7680);
+        GL11.glStencilMask((int)255);
+        GL11.glColorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
+        GL11.glDepthMask((boolean)true);
+        GL11.glDepthRange((double)0.0, (double)1.0);
+        GL11.glDisable((int)2960);
         GlStateManager._enableDepthTest();
     }
-    
-    protected void doRenderPortal(
-        Portal portal,
-        Matrix4f modelView
-    ) {
-        if (shouldSkipRenderingInsideFuseViewPortal(portal)) {
+
+    protected void doRenderPortal(Portal portal, Matrix4f modelView) {
+        if (RendererUsingStencil.shouldSkipRenderingInsideFuseViewPortal(portal)) {
             return;
         }
-        
         int outerPortalStencilValue = PortalRendering.getPortalLayer();
-        
         Profiler.get().push("render_view_area");
-        
-        boolean anySamplePassed = PortalRenderInfo.renderAndDecideVisibility(portal, () -> {
-            renderPortalViewAreaToStencil(portal, modelView);
-        });
-        
+        boolean anySamplePassed = PortalRenderInfo.renderAndDecideVisibility(portal, () -> this.renderPortalViewAreaToStencil(portal, modelView));
         Profiler.get().pop();
-        
         if (!anySamplePassed) {
-            setStencilStateForWorldRendering();
+            this.setStencilStateForWorldRendering();
             return;
         }
-        
         PortalRendering.pushPortalLayer(portal);
-        
         int thisPortalStencilValue = outerPortalStencilValue + 1;
-        
         if (!portal.isFuseView()) {
             Profiler.get().push("clear_depth_of_view_area");
-            clearDepthOfThePortalViewArea(portal);
+            this.clearDepthOfThePortalViewArea(portal);
             Profiler.get().pop();
         }
-        
-        setStencilStateForWorldRendering();
-        
-        renderPortalContent(portal);
-        
+        this.setStencilStateForWorldRendering();
+        this.renderPortalContent(portal);
         PortalRendering.popPortalLayer();
-        // pop portal layer before restoring depth, for clipping, see ViewAreaRenderer
-        
         if (!portal.isFuseView()) {
-            restoreDepthOfPortalViewArea(portal, modelView, thisPortalStencilValue);
+            this.restoreDepthOfPortalViewArea(portal, modelView, thisPortalStencilValue);
         }
-        
-        clampStencilValue(outerPortalStencilValue);
+        RendererUsingStencil.clampStencilValue(outerPortalStencilValue);
     }
-    
+
     @Override
     public void renderPortalInEntityRenderer(Portal portal) {
-        //nothing
     }
-    
-    private void renderPortalViewAreaToStencil(
-        Portal portal, Matrix4f modelView
-    ) {
+
+    private void renderPortalViewAreaToStencil(Portal portal, Matrix4f modelView) {
         int outerPortalStencilValue = PortalRendering.getPortalLayer();
-        
-        //is the mask here different from the mask of glStencilMask?
-        GL11.glStencilFunc(GL_EQUAL, outerPortalStencilValue, 0xFF);
-        
-        //if stencil and depth test pass, the data in stencil buffer will increase by 1
-        GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-        //NOTE about GL_INCR:
-        //if multiple triangles occupy the same pixel and passed stencil and depth tests,
-        //its stencil value will still increase by one
-        
-        GL11.glStencilMask(0xFF);
-        
-        // update it before pushing
+        GL11.glStencilFunc((int)514, (int)outerPortalStencilValue, (int)255);
+        GL11.glStencilOp((int)7680, (int)7680, (int)7682);
+        GL11.glStencilMask((int)255);
         FrontClipping.updateInnerClipping(modelView);
-        
-        ViewAreaRenderer.renderPortalArea(
-            portal, Vec3.ZERO,
-            modelView,
-            RenderSystem.getProjectionMatrix(),
-            true, true,
-            true, true
-        );
+        ViewAreaRenderer.renderPortalArea(portal, Vec3.ZERO, modelView, PortalRenderer.getCurrentProjectionMatrix(), true, false, true, true);
     }
-    
-    private void clearDepthOfThePortalViewArea(
-        Portal portal
-    ) {
+
+    private void clearDepthOfThePortalViewArea(Portal portal) {
         GlStateManager._enableDepthTest();
-        GlStateManager._depthMask(true);
-        
-        setStencilStateForWorldRendering();
-        
-        //do not manipulate color buffer
-        GL11.glColorMask(false, false, false, false);
-        
-        //save the state
-        int originalDepthFunc = GL11.glGetInteger(GL_DEPTH_FUNC);
-        
-        //always passes depth test
-        GL11.glDepthFunc(GL_ALWAYS);
-        
-        //the pixel's depth will be 1, which is the furthest
-        GL11.glDepthRange(1, 1);
-        
-        MyRenderHelper.renderScreenTriangle();
-        
-        //retrieve the state
-        GL11.glColorMask(true, true, true, true);
-        GL11.glDepthFunc(originalDepthFunc);
-        GL11.glDepthRange(0, 1);
+        GlStateManager._depthMask((boolean)true);
+        this.setStencilStateForWorldRendering();
+        GL11.glColorMask((boolean)false, (boolean)false, (boolean)false, (boolean)false);
+        int originalDepthFunc = GL11.glGetInteger((int)2932);
+        GL11.glDepthFunc((int)519);
+        GL11.glDepthRange((double)1.0, (double)1.0);
+        MyRenderHelper.renderScreenTriangleNoColor(true);
+        GL11.glColorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
+        GL11.glDepthFunc((int)originalDepthFunc);
+        GL11.glDepthRange((double)0.0, (double)1.0);
     }
-    
-    protected void restoreDepthOfPortalViewArea(
-        Portal portal, Matrix4f modelView,
-        int portalStencilValue
-    ) {
-        setStencilLimitation(portalStencilValue);
-        
-        int originalDepthFunc = GL11.glGetInteger(GL_DEPTH_FUNC);
-        
-        GL11.glDepthFunc(GL_ALWAYS);
-        
-        ViewAreaRenderer.renderPortalArea(
-            portal, Vec3.ZERO,
-            modelView,
-            RenderSystem.getProjectionMatrix(),
-            false, false,
-            true,
-            true // important: should clip, otherwise depth will be abnormal when viewing scale box from inside in portal
-        );
-        
-        GL11.glDepthFunc(originalDepthFunc);
+
+    protected void restoreDepthOfPortalViewArea(Portal portal, Matrix4f modelView, int portalStencilValue) {
+        RendererUsingStencil.setStencilLimitation(portalStencilValue);
+        int originalDepthFunc = GL11.glGetInteger((int)2932);
+        GL11.glDepthFunc((int)519);
+        ViewAreaRenderer.renderPortalArea(portal, Vec3.ZERO, modelView, PortalRenderer.getCurrentProjectionMatrix(), false, false, true, true);
+        GL11.glDepthFunc((int)originalDepthFunc);
     }
-    
-    public static void clampStencilValue(
-        int maximumValue
-    ) {
-        GlStateManager._depthMask(true);
-        
-        //NOTE GL_GREATER means ref > stencil
-        //GL_LESS means ref < stencil
-        
-        //pass if the stencil value is greater than the maximum value
-        GL11.glStencilFunc(GL_LESS, maximumValue, 0xFF);
-        
-        //if stencil test passed, encode the stencil value
-        GL11.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
-        
-        //do not manipulate the depth buffer
-        GL11.glDepthMask(false);
-        
-        //do not manipulate the color buffer
-        GL11.glColorMask(false, false, false, false);
-        
+
+    public static void clampStencilValue(int maximumValue) {
+        GlStateManager._depthMask((boolean)true);
+        GL11.glStencilFunc((int)513, (int)maximumValue, (int)255);
+        GL11.glStencilOp((int)7680, (int)7681, (int)7681);
+        GL11.glDepthMask((boolean)false);
+        GL11.glColorMask((boolean)false, (boolean)false, (boolean)false, (boolean)false);
         GlStateManager._disableDepthTest();
-        
-        MyRenderHelper.renderScreenTriangle();
-        
-        GL11.glDepthMask(true);
-        
-        GL11.glColorMask(true, true, true, true);
-        
+        MyRenderHelper.renderScreenTriangleNoColor(false);
+        GL11.glDepthMask((boolean)true);
+        GL11.glColorMask((boolean)true, (boolean)true, (boolean)true, (boolean)true);
         GlStateManager._enableDepthTest();
     }
-    
+
     private void setStencilStateForWorldRendering() {
         int thisPortalStencilValue = PortalRendering.getPortalLayer();
-        
-        setStencilLimitation(thisPortalStencilValue);
+        RendererUsingStencil.setStencilLimitation(thisPortalStencilValue);
     }
-    
+
     public static void setStencilLimitation(int stencilValue) {
-        //draw content in the mask
-        GL11.glStencilFunc(GL_EQUAL, stencilValue, 0xFF);
-        
-        //do not manipulate stencil buffer now
-        GL11.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        GL11.glStencilFunc((int)514, (int)stencilValue, (int)255);
+        GL11.glStencilOp((int)7680, (int)7680, (int)7680);
     }
-    
+
     public static boolean shouldSkipRenderingInsideFuseViewPortal(Portal portal) {
+        Vec3 transformedCameraPos;
         if (!PortalRendering.isRendering()) {
             return false;
         }
-        
         Portal renderingPortal = PortalRendering.getRenderingPortal();
-        
         if (!renderingPortal.isFuseView()) {
             return false;
         }
-        
         Vec3 cameraPos = CHelper.getCurrentCameraPos();
-        
-        Vec3 transformedCameraPos = portal
-            .transformPoint(renderingPortal.transformPoint(cameraPos));
-        
-        // roughly test whether they are reverse portals
-        return cameraPos.distanceToSqr(transformedCameraPos) < 0.1;
+        return cameraPos.distanceToSqr(transformedCameraPos = portal.transformPoint(renderingPortal.transformPoint(cameraPos))) < 0.1;
     }
 }

@@ -173,7 +173,7 @@ public class MyNbtTextFormatter
             this.result = Component.literal("[]");
             return;
         }
-        if (SINGLE_LINE_ELEMENT_TYPES.contains(element.getElementType()) && element.size() <= 8) {
+        if (SINGLE_LINE_ELEMENT_TYPES.contains(element.get(0).getId()) && element.size() <= 8) {
             String string = ENTRY_SEPARATOR + SPACE;
             MutableComponent mutableText = Component.literal(SQUARE_OPEN_BRACKET);
             for (int i = 0; i < element.size(); ++i) {

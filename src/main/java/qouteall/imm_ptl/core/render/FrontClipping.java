@@ -1,20 +1,16 @@
 package qouteall.imm_ptl.core.render;
 
-import com.mojang.blaze3d.shaders.Uniform;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.CompiledShaderProgram;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL20;
 import qouteall.imm_ptl.core.CHelper;
 import qouteall.imm_ptl.core.IPCGlobal;
 import qouteall.imm_ptl.core.IPGlobal;
-import qouteall.imm_ptl.core.ducks.IEShader;
 import qouteall.imm_ptl.core.portal.Portal;
 import qouteall.imm_ptl.core.render.context_management.PortalRendering;
 import qouteall.q_misc_util.my_util.Plane;
@@ -23,204 +19,115 @@ public class FrontClipping {
     private static final Minecraft client = Minecraft.getInstance();
     private static double[] activeClipPlaneEquationBeforeModelView;
     private static double[] activeClipPlaneAfterModelView;
-    
-    public static boolean isClippingEnabled = false;
-    
+    public static boolean isClippingEnabled;
     public static final double ADJUSTMENT = 0.01;
-    
+
     public static void disableClipping() {
-        if (IPGlobal.enableClippingMechanism) {
-            if (isClippingEnabled) {
-                GL11.glDisable(GL11.GL_CLIP_PLANE0);
-                isClippingEnabled = false;
-            }
+        if (IPGlobal.enableClippingMechanism && isClippingEnabled) {
+            GL11.glDisable((int)12288);
+            isClippingEnabled = false;
         }
     }
-    
+
     private static void enableClipping() {
-        if (IPGlobal.enableClippingMechanism) {
-            if (!isClippingEnabled) {
-                GL11.glEnable(GL11.GL_CLIP_PLANE0);
-                isClippingEnabled = true;
-            }
+        if (IPGlobal.enableClippingMechanism && !isClippingEnabled) {
+            GL11.glEnable((int)12288);
+            isClippingEnabled = true;
         }
     }
-    
+
     public static void updateInnerClipping(PoseStack matrixStack) {
         Matrix4f modelView = matrixStack.last().pose();
-        updateInnerClipping(modelView);
+        FrontClipping.updateInnerClipping(modelView);
     }
-    
+
     public static void updateInnerClipping(Matrix4f modelView) {
         if (PortalRendering.isRendering()) {
-            setupInnerClipping(
-                PortalRendering.getActiveClippingPlane(),
-                modelView, 0
-            );
-        }
-        else {
-            disableClipping();
+            FrontClipping.setupInnerClipping(PortalRendering.getActiveClippingPlane(), modelView, 0.0);
+        } else {
+            FrontClipping.disableClipping();
         }
     }
-    
-    // NOTE the actual clipping plane is related to current model view matrix
-    public static void setupInnerClipping(
-        Plane clipping, Matrix4f modelView, double adjustment
-    ) {
+
+    public static void setupInnerClipping(Plane clipping, Matrix4f modelView, double adjustment) {
         if (!IPCGlobal.useFrontClipping) {
             return;
         }
-        
-        // Note: the normal of plane points to the non-clipped side
-        
         if (clipping != null) {
-            activeClipPlaneEquationBeforeModelView =
-                getClipEquationInner(clipping.pos(), clipping.normal(), adjustment);
-            activeClipPlaneAfterModelView =
-                transformClipEquation(activeClipPlaneEquationBeforeModelView, modelView);
-            
-            enableClipping();
-        }
-        else {
+            activeClipPlaneEquationBeforeModelView = FrontClipping.getClipEquationInner(clipping.pos(), clipping.normal(), adjustment);
+            activeClipPlaneAfterModelView = FrontClipping.transformClipEquation(activeClipPlaneEquationBeforeModelView, modelView);
+            FrontClipping.enableClipping();
+        } else {
             activeClipPlaneEquationBeforeModelView = null;
-            disableClipping();
+            FrontClipping.disableClipping();
         }
     }
-    
-    private static double[] transformClipEquation(
-        double[] equation, Matrix4f modelView
-    ) {
-        Vector4f eq =
-            new Vector4f((float) equation[0], (float) equation[1], (float) equation[2], (float) equation[3]);
-        Matrix4f m = new Matrix4f(modelView);
+
+    private static double[] transformClipEquation(double[] equation, Matrix4f modelView) {
+        Vector4f eq = new Vector4f((float)equation[0], (float)equation[1], (float)equation[2], (float)equation[3]);
+        Matrix4f m = new Matrix4f((Matrix4fc)modelView);
         m.invert();
         m.transpose();
         m.transform(eq);
         return new double[]{eq.x(), eq.y(), eq.z(), eq.w()};
     }
-    
-    private static double[] getClipEquationInner(
-        Vec3 clippingPoint, Vec3 clippingDirection, double correction
-    ) {
+
+    private static double[] getClipEquationInner(Vec3 clippingPoint, Vec3 clippingDirection, double correction) {
         Vec3 cameraPos = CHelper.getCurrentCameraPos();
-        
         Vec3 planeNormal = clippingDirection;
-        
-        Vec3 portalPos = clippingPoint
-            .add(planeNormal.scale(correction))
-            .subtract(cameraPos);
-        
-        //equation: planeNormal * p + c > 0
-        //-planeNormal * portalCenter = c
-        double c = planeNormal.scale(-1).dot(portalPos);
-        
-        return new double[]{
-            planeNormal.x, planeNormal.y, planeNormal.z, c
-        };
+        Vec3 portalPos = clippingPoint.add(planeNormal.scale(correction)).subtract(cameraPos);
+        double c = planeNormal.scale(-1.0).dot(portalPos);
+        return new double[]{planeNormal.x, planeNormal.y, planeNormal.z, c};
     }
-    
+
     public static void setupOuterClipping(PoseStack matrixStack, Portal portal) {
         if (!IPCGlobal.useFrontClipping) {
             return;
         }
-        
-        double[] clipEquationOuter = getClipEquationOuter(portal);
-        
+        double[] clipEquationOuter = FrontClipping.getClipEquationOuter(portal);
         if (clipEquationOuter != null) {
             activeClipPlaneEquationBeforeModelView = clipEquationOuter;
-            activeClipPlaneAfterModelView = transformClipEquation(
-                activeClipPlaneEquationBeforeModelView, matrixStack.last().pose()
-            );
-            enableClipping();
-        }
-        else {
+            activeClipPlaneAfterModelView = FrontClipping.transformClipEquation(activeClipPlaneEquationBeforeModelView, matrixStack.last().pose());
+            FrontClipping.enableClipping();
+        } else {
             activeClipPlaneEquationBeforeModelView = null;
-            disableClipping();
+            FrontClipping.disableClipping();
         }
     }
-    
-    // "double @Nullable []" is weird...
+
     private static double @Nullable [] getClipEquationOuter(Portal portal) {
-        @Nullable Plane outerClipping = portal.getPortalShape()
-            .getOuterClipping(portal.getThisSideState());
-        
+        @Nullable Plane outerClipping = portal.getPortalShape().getOuterClipping(portal.getThisSideState());
         if (outerClipping == null) {
             return null;
         }
-        
         Vec3 planeNormal = outerClipping.normal();
-        
-        Vec3 cameraPos = client.gameRenderer.getMainCamera().getPosition();
-        
-        Vec3 portalPos = outerClipping.pos()
-            .subtract(cameraPos);
-        
-        //equation: planeNormal * p + c > 0
-        //-planeNormal * portalCenter = c
-        double c = planeNormal.scale(-1).dot(portalPos);
-        
-        return new double[]{
-            planeNormal.x, planeNormal.y, planeNormal.z, c
-        };
+        Vec3 cameraPos = FrontClipping.client.gameRenderer.getMainCamera().getPosition();
+        Vec3 portalPos = outerClipping.pos().subtract(cameraPos);
+        double c = planeNormal.scale(-1.0).dot(portalPos);
+        return new double[]{planeNormal.x, planeNormal.y, planeNormal.z, c};
     }
-    
+
     public static double[] getActiveClipPlaneEquationBeforeModelView() {
         return activeClipPlaneEquationBeforeModelView;
     }
-    
+
     public static double[] getActiveClipPlaneEquationAfterModelView() {
         return activeClipPlaneAfterModelView;
     }
-    
-    public static void updateClippingEquationUniformForCurrentShader(
-        boolean isRenderingEntities
-    ) {
+
+    public static void updateClippingEquationUniformForCurrentShader(boolean isRenderingEntities) {
         if (!IPGlobal.enableClippingMechanism) {
             return;
         }
-        
-        CompiledShaderProgram shader = RenderSystem.getShader();
-        
-        if (shader == null) {
-            return;
-        }
-        
-        int uniformLocation = ((IEShader) shader).ip_getClippingEquationUniformLocation();
-        if (uniformLocation != -1) {
-            if (isClippingEnabled) {
-                double[] equation = activeClipPlaneEquationBeforeModelView;
-//                double[] equation = isRenderingEntities ? activeClipPlaneAfterModelView : activeClipPlaneEquationBeforeModelView;
-//                clippingEquationUniform.set(
-//                    (float) equation[0], (float) equation[1],
-//                    (float) equation[2], (float) equation[3]
-//                );
-                GL20.glUniform4f(
-                    uniformLocation,
-                    (float) equation[0], (float) equation[1],
-                    (float) equation[2], (float) equation[3]
-                );
-            }
-            else {
-                GL20.glUniform4f(uniformLocation, 0, 0, 0, 1);
-//                clippingEquationUniform.set(0f, 0f, 0f, 1f);
-            }
-        }
     }
-    
+
     public static void unsetClippingUniform() {
         if (!IPGlobal.enableClippingMechanism) {
             return;
         }
-        
-        CompiledShaderProgram shader = RenderSystem.getShader();
-        
-        if (shader == null) {
-            return;
-        }
-        
-        int uniformLocation = ((IEShader) shader).ip_getClippingEquationUniformLocation();
-        if (uniformLocation != -1) {
-            GL20.glUniform4f(uniformLocation, 0, 0, 0, 1);
-        }
+    }
+
+    static {
+        isClippingEnabled = false;
     }
 }

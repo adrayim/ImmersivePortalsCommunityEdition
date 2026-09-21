@@ -5,34 +5,24 @@ import com.mojang.blaze3d.pipeline.TextureTarget;
 import net.minecraft.client.Minecraft;
 import qouteall.q_misc_util.Helper;
 
-//it will always be the same size as the main frame buffer
 public class SecondaryFrameBuffer {
     public TextureTarget fb;
-    
+
     public void prepare() {
         RenderTarget mainFrameBuffer = Minecraft.getInstance().getMainRenderTarget();
         int width = mainFrameBuffer.viewWidth;
         int height = mainFrameBuffer.viewHeight;
-        prepare(width, height);
+        this.prepare(width, height);
     }
-    
+
     public void prepare(int width, int height) {
-        if (fb == null) {
-            fb = new TextureTarget(
-                width, height,
-                true // has depth attachment
-            );
-            fb.checkStatus();
+        if (this.fb == null) {
+            this.fb = new TextureTarget("immersive_portals_secondary", width, height, true);
             Helper.log("Secondary Framebuffer init");
         }
-        if (width != fb.viewWidth ||
-            height != fb.viewHeight
-        ) {
-            fb.resize(width, height);
-            fb.checkStatus();
+        if (width != this.fb.viewWidth || height != this.fb.viewHeight) {
+            this.fb.resize(width, height);
             Helper.log("Secondary Framebuffer resized");
         }
     }
-    
-    
 }

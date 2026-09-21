@@ -75,7 +75,7 @@ public abstract class MixinEntity implements IEEntity, ImmPtlEntityExtension {
     @Shadow
     private ChunkPos chunkPosition;
     
-    @Shadow @Final private static Logger LOGGER;
+    @Unique private static final Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     @Shadow private @Nullable BlockState inBlockState;
     @Unique
     private static final CountDownInt IMM_PTL_LOG_COUNTER = new CountDownInt(20);

@@ -272,12 +272,12 @@ public class Portal extends Entity implements
                 
                 if (shapeNormalized) {
                     mesh2D = GeometryPortalShape.readOldMeshFromTag(
-                        compoundTag.getList("specialShape", 6)
+                        compoundTag.getListOrEmpty("specialShape")
                     );
                 }
                 else {
                     mesh2D = GeometryPortalShape.readOldMeshFromTagNonNormalized(
-                        compoundTag.getList("specialShape", 6),
+                        compoundTag.getListOrEmpty("specialShape"),
                         width / 2, height / 2
                     );
                 }
@@ -301,9 +301,9 @@ public class Portal extends Entity implements
         if (compoundTag.contains("rotationA")) {
             setRotationTransformationD(new DQuaternion(
                 compoundTag.getFloatOr("rotationB", 0.0F),
-                compoundTag.getFloat("rotationC"),
-                compoundTag.getFloat("rotationD"),
-                compoundTag.getFloat("rotationA")
+                compoundTag.getFloatOr("rotationC", 0.0F),
+                compoundTag.getFloatOr("rotationD", 0.0F),
+                compoundTag.getFloatOr("rotationA", 0.0F)
             ));
         }
         else {
@@ -344,7 +344,7 @@ public class Portal extends Entity implements
         }
         
         if (compoundTag.contains("commandsOnTeleported")) {
-            ListTag list = compoundTag.getList("commandsOnTeleported", 8);
+            ListTag list = compoundTag.getListOrEmpty("commandsOnTeleported");
             commandsOnTeleported = list.stream()
                 .map(t -> ((StringTag) t).asString().orElse("")).collect(Collectors.toList());
         }
