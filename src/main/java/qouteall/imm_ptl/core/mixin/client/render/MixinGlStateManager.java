@@ -20,7 +20,7 @@ public abstract class MixinGlStateManager {
     }
     
     @Inject(
-        method = "Lcom/mojang/blaze3d/platform/GlStateManager;_enableCull()V",
+        method = "_enableCull",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -32,7 +32,7 @@ public abstract class MixinGlStateManager {
     }
     
     @Inject(
-        method = "Lcom/mojang/blaze3d/platform/GlStateManager;_glGenBuffers()I",
+        method = "_glGenBuffers",
         at = @At("HEAD"),
         cancellable = true
     )
@@ -44,7 +44,7 @@ public abstract class MixinGlStateManager {
     }
     
     @Inject(
-        method = "Lcom/mojang/blaze3d/platform/GlStateManager;_glGenVertexArrays()I",
+        method = "_glGenVertexArrays",
         at = @At("HEAD"),
         cancellable = true
     )
