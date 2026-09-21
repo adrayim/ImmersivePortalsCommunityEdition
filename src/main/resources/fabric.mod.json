@@ -44,9 +44,9 @@
     "q_misc_util.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.7.4",
-    "fabric-api": ">=0.110.0",
-    "minecraft": "1.21.3",
+    "fabricloader": ">=0.16.14",
+    "fabric-api": ">=0.119.4",
+    "minecraft": "1.21.4",
     "dimlib": "*"
   },
   "breaks": {

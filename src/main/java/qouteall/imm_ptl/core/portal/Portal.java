@@ -583,7 +583,7 @@ public class Portal extends Entity implements
     @Override
     public @NotNull AABB getBoundingBox() {
         if (boundingBoxCache == null) {
-            boundingBoxCache = makeBoundingBox();
+            boundingBoxCache = computePortalBoundingBox();
         }
         return boundingBoxCache;
     }
@@ -968,8 +968,7 @@ public class Portal extends Entity implements
         super.tick();
     }
     
-    @Override
-    protected @NotNull AABB makeBoundingBox() {
+    protected @NotNull AABB computePortalBoundingBox() {
         if (axisW == null) {
             // it may be called when the portal is not yet initialized
             boundingBoxCache = null;
