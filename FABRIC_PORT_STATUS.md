@@ -1,6 +1,6 @@
 # Fabric sürüm geçişi durumu
 
-Son ölçüm: 21 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi ölçümlerini tutar. 26.3 portu ayrı çalışma ağacında durmaktadır; henüz çalışır mod veya yayımlanabilir JAR üretmez. Forge kapsam dışıdır.
+Son ölçüm: 22 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi ölçümlerini tutar. 26.3 portu ayrı çalışma ağacında durmaktadır; henüz çalışır mod veya yayımlanabilir JAR üretmez. Forge kapsam dışıdır.
 
 | Minecraft | Durum |
 | --- | --- |
@@ -8,7 +8,7 @@ Son ölçüm: 21 Eylül 2026. Bu dal 1.21.1 Fabric temelini ve sürüm geçişi 
 | 1.21.2 | `codex/fabric-1.21.2` dalında Java derlemesi geçti ve istemci açıldı. Creative Superflat dünyada dikey ve yatay Nether portalı oluştu, Nether görüntülendi, oyuncu iki yönde boyut değiştirdi; ayrıntılar aşağıda. Görüntü boşlukları ve chunk yükleme hataları sürdüğünden port henüz tamamlanmadı. Sodium ve Iris çalışma zamanı testi yapılmadı. |
 | 1.21.3 | Eski `upstream/1.21.3` WIP dalı ilk 100 Java hatasında durdu. Doğrulanmış 1.21.2 kodundan açılan `codex/fabric-1.21.3-next` dalında `compileJava`, `test`, `build` geçti; özel sunucu ve düz dünya kopyası istemcide açıldı. Kullanıcı portal görüntüsü ve uzaktan mob vuruşunda sorun görmedi; iki yönlü geçiş ve yeniden bağlantı günlükte doğrulandı. |
 | 1.21.4 | Ayrı `codex/fabric-1.21.4-next` dalında ana proje ve yerel DimLib `build` geçti; özel sunucu portal oluşturdu. Superflat istemci açıldı, kullanıcı oyun testinde sorun görmedi, günlükte iki yönlü geçişler var. Sodium/Iris ve çok oyunculu etkileşim henüz sınanmadı. |
-| 1.21.5 | Derleme, özel sunucu portal testi ve Superflat istemci açılışı geçti. Kullanıcı uzaktaki portal arazisi ile karşı dünya moblarının yanı sıra uzaktan mob vuruşu/geri savurma, sis geçişi ve kırılan çerçeveye yeniden bağlanmayı doğruladı. Sodium/Iris ve çok oyunculu testleri bekliyor. |
+| 1.21.5 | Derleme, özel sunucu portal testi ve Superflat istemci açılışı geçti. Kullanıcı uzaktaki portal arazisi ile karşı dünya moblarının yanı sıra uzaktan mob vuruşu/geri savurma, sis geçişi ve kırılan çerçeveye yeniden bağlanmayı doğruladı. [Yalnız Fabric ön sürümü](https://github.com/adrayim/ImmersivePortalsCommunityEdition/releases/tag/v6.0.6-mc1.21.5-fabric) yayımlandı. Sodium/Iris ve çok oyunculu testleri bekliyor. |
 | 1.21.6–1.21.11 | Henüz derleme veya oyun testi yapılmadı. |
 | 26.1, 26.1.1, 26.1.2, 26.2 | Fabric API sürümleri doğrulandı; henüz derleme veya oyun testi yapılmadı. |
 | 26.3 | JDK 26 üzerinde Java 25 hedefiyle Gradle 9.5.1, Loom 1.17, Loader 0.19.5 ve Fabric API 0.161.0 kullanıldı. `help` ve `validateAccessWidener` geçti. `compileJava` en az 1.000 hatayla durdu. Oyun testi yapılamadı. |
@@ -77,7 +77,7 @@ Kullanıcı son oyun denemesinde uzak mob geri savurması ve portalın eski konu
 Yayımlanmış 1.21.3 DimLib'in Minecraft sürüm şartı özel sunucuyu engelledi. Depodaki DimLib kaynakları 1.21.4'e uyarlandı, `vendor/dimlib-1.1.0+mc1.21.4.jar` üretildi ve ana Fabric JAR'ına gömüldü. DimLib ve ana proje `build` görevleri geçti. `run/dedicated-test` içinde localhost:25587 özel sunucusu yeni Superflat dünyayı açtı, bütün boyutları kaydederek `stop` ile temiz kapandı. Ayrı sunucu oturumunda obsidyen çerçeve ve ateş sunucu komutlarıyla kuruldu; `Portal Generation Attempted`, `Generated Portal On Ground`, portal yer tutucu bloğu ve iki boyutta ikişer `immersive_portals:nether_portal_new` varlığı doğrulandı. Çerçeve kırılıp yeniden yakıldıktan sonra oyuncusuz sunucuda bekleyen portal bağlantısı tamamlanmadı; bu durum istemci testinin yerini tutmaz. Mod bilgi uç noktasının 404 yanıtı açılışı etkilemedi. Üretilen JAR içinde yalnızca 1.21.4 DimLib, Cloth Config ve MidnightLib bulunuyor.
 
 1.21.3 Superflat test dünyasının ayrı kopyası `run/saves/Fabric 1_21_4 Portal Superflat T` olarak hazırlandı; ana ses 0.0. İlk istemci açılışlarında 1.21.4'ün değiştirdiği `ParticleEngine.render`, `GameRenderer` → `LevelRenderer.renderLevel` çağrısı ve `LevelRenderer` weather/render callback imzaları yüzünden mixin hataları çıktı. Bu imzalar uyarlanarak istemci açıldı. Kullanıcının oyun denemesinde “şu anda problem görünmüyor” geri bildirimi alındı; günlükte çok sayıda Overworld ↔ Nether geçişi var. İstemci normal kapandı, bütün boyutlar kaydedildi. Sodium/Iris çalışma zamanı ve çok oyunculu bağlantı ayrıca bekliyor. İstemci açıkken aynı çalışma ağacında derleme yapılmadı.
-## Fabric 1.21.5 geçişi — sürüyor, yayımlanmadı
+## Fabric 1.21.5 geçişi — ilk çalışma aşaması
 
 1.21.4 doğrulanmış commit'i `42f85dce` üzerinden `codex/fabric-1.21.5-next` çalışma ağacı açıldı. Minecraft 1.21.5, Fabric API `0.128.2+1.21.5`, Yarn `1.21.5+build.1`, Cloth Config `18.0.145`, Mod Menu `14.0.1`, derleme için Sodium `mc1.21.5-0.6.13-fabric` ve Iris `1.8.11+1.21.5-fabric` seçildi. Fabric Loom 1.10.5 / Gradle 8.12.1 gerekiyor. Gradle arşivi resmî SHA-256 ile doğrulandı. MidnightLib `1.7.3+1.21.4-fabric` seçildi; Modrinth sürüm metadatası bunun 1.21.4 ve 1.21.5'i desteklediğini belirtiyor. Yeni 1.9.0 paketi Loom 1.13.457 ile üretildiği için bu derleme zinciriyle kullanılamadı.
 
@@ -100,3 +100,7 @@ Kullanıcı, 1.21.4 ve 1.21.5'te uzaktan bakarken Nether'da aşağı akan lavın
 ## 22 Eylül: son 1.21.5 etkileşim testi
 
 Ses kapalı kopya Superflat dünya, temiz `00dc52ad` commit'inden `runClient --offline` ile yeniden açıldı. Günlükte Overworld → Nether ve Nether → Overworld geçişleri kaydedildi. Kullanıcı üç senaryonun da düzgün olduğunu bildirdi: portal içinden karşı taraftaki moba vurma ve geri savurma yönü; iki yönde sis/renk geçişi; eksik obsidyeni onarıp yeniden yakarken eski çerçeveye bağlanma. Son JAR'ın `fabric.mod.json` dosyası Minecraft `1.21.5` hedefliyor; gömülü JAR'lar yalnız DimLib, Cloth Config ve MidnightLib; Forge/NeoForge metadata'sı yok. Bu sonuçlar Sodium/Iris veya çok oyunculu ortamı kapsamaz.
+
+## 22 Eylül: Fabric 1.21.5 ön sürümü
+
+Kullanıcı, önceki Fabric sürümleri GitHub'a gönderilmişse 1.21.5'in de gönderilmesini istedi. 1.21.2, 1.21.3 ve 1.21.4 ön sürümleri GitHub'da doğrulandı. `codex/fabric-1.21.5-next` dalı ve `v6.0.6-mc1.21.5-fabric` etiketi gönderildi; [ön sürüm](https://github.com/adrayim/ImmersivePortalsCommunityEdition/releases/tag/v6.0.6-mc1.21.5-fabric) oluşturuldu. Etiket `1d67dfc441a5663f2986b41d50b13dc40373204e` commit'ini gösteriyor. GitHub sürümünde tek ek `immersive-portals-6.0.6-mc1.21.5-fabric.jar` (3.206.983 bayt); GitHub SHA-256 özeti yerel JAR ile eşleşiyor: `A3F233E5317D7E74B0E8BD316760791B72AB28F036AAF4B75DEA975F655AEDEB`. Forge/NeoForge çıktısı eklenmedi.
