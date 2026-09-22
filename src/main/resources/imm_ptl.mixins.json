@@ -123,7 +123,7 @@
     "client.render.optimization.MixinFrustum",
     "client.render.optimization.MixinLevelRenderer_Clouds",
     "client.render.optimization.MixinSectionBufferBuilderPack",
-    "client.render.shader.MixinCompiledShader",
+    "client.render.shader.MixinGlDeviceShaderSource",
     "client.render.shader.MixinGlProgramClipping",
     "client.render.shader.MixinGameRenderer_Shaders",
     "client.sound.MixinClientLevel_Sound",

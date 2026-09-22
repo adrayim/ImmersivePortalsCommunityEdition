@@ -31,13 +31,16 @@ public class MixinGlProgramClipping {
                 program.getProgramId(), "iportal_ClippingEquation"
             );
         }
+        boolean usesCameraRelativePosition = program.MODEL_OFFSET != null ||
+            program.getDebugLabel().contains("portal_area");
+        double[] equation = FrontClipping.isClippingEnabled
+            ? (usesCameraRelativePosition
+                ? FrontClipping.getActiveClipPlaneEquationBeforeModelView()
+                : FrontClipping.getActiveClipPlaneEquationAfterModelView())
+            : null;
         if (ip_clippingUniformLocation < 0) {
             return;
         }
-
-        double[] equation = FrontClipping.isClippingEnabled
-            ? FrontClipping.getActiveClipPlaneEquationBeforeModelView()
-            : null;
         if (equation == null) {
             GL20.glUniform4f(ip_clippingUniformLocation, 0, 0, 0, 1);
         }

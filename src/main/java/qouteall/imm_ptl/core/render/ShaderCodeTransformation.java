@@ -86,6 +86,10 @@ public class ShaderCodeTransformation {
             String replacement = String.join("\n", entry.replacement);
             result = result.replaceAll(entry.pattern, replacement);
         }
+
+        if (result.equals(inputCode)) {
+            LOGGER.warn("Shader transformation did not match {} ({})", shaderId, selected.comment);
+        }
         
         if (selected.debugOutput) {
             LOGGER.info("Shader Transformed {}\n{}", shaderId, result);
